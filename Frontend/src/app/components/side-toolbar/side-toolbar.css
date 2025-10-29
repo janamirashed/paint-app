@@ -1,0 +1,32 @@
+.side-toolbar {
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-btn {
+  width: 45px;
+  height: 45px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tool-btn:hover {
+  background: #f3f4f6;
+}
+
+.tool-btn.active {
+  background: #111;
+  color: #fff;
+}

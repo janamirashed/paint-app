@@ -1,0 +1,14 @@
+.canvas-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: grey;
+}
+
+.canvas {
+  background: grey;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.08);
+  width: 80%;
+  height: 80%;
+}
