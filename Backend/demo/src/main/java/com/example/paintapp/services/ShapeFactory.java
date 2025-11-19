@@ -1,65 +1,45 @@
-package com.example.paintapp.services;
+package com.example.paintapp.dtos;
 
-import com.example.paintapp.dtos.ShapeDTO;
-import com.example.paintapp.shapes.Circle;
-import com.example.paintapp.shapes.Ellipse;
-import com.example.paintapp.shapes.Line;
-import com.example.paintapp.shapes.Rectangle;
-import com.example.paintapp.shapes.Square;
-import com.example.paintapp.shapes.Triangle;
-import com.example.paintapp.shapes.base.Shape;
+import java.util.Map;
 
-public class ShapeFactory {
+public class ShapeDTO {
 
-    public Shape createShape(ShapeDTO dto) {
+    private String type;
+    private int x;
+    private int y;
+    private Map<String, Object> properties;
 
-        if (dto == null || dto.getType() == null) {
-            throw new IllegalArgumentException("Invalid shape DTO");
-        }
+    public ShapeDTO() {}
 
-        Shape shape;
+    public String getType() {
+        return type;
+    }
 
-        switch (dto.getType().toLowerCase()) {
+    public void setType(String type) {
+        this.type = type;
+    }
 
-            case "circle":
-                shape = new Circle(dto.getX(), dto.getY(), dto.getRadius());
-                break;
+    public int getX() {
+        return x;
+    }
 
-            case "line":
-                shape = new Line(dto.getX(), dto.getY(), dto.getX2(), dto.getY2());
-                break;
+    public void setX(int x) {
+        this.x = x;
+    }
 
-            case "rectangle":
-                shape = new Rectangle(dto.getX(), dto.getY(), dto.getWidth(), dto.getHeight());
-                break;
+    public int getY() {
+        return y;
+    }
 
-            case "triangle":
-                shape = new Triangle(
-                        dto.getX(), dto.getY(),
-                        dto.getX2(), dto.getY2(),
-                        dto.getX3(), dto.getY3()
-                );
-                break;
+    public void setY(int y) {
+        this.y = y;
+    }
 
-            case "square":
-                shape = new Square(dto.getX(), dto.getY(), dto.getSideLength());
-                break;
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
 
-            case "ellipse":
-                shape = new Ellipse(dto.getX(), dto.getY(), dto.getRadiusX(), dto.getRadiusY());
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown shape type: " + dto.getType());
-        }
-
-        shape.type = dto.getType();
-        shape.x = dto.getX();
-        shape.y = dto.getY();
-        shape.fillColor = dto.getFillColor();
-        shape.borderWidth = dto.getBorderWidth();
-        shape.borderColor = dto.getBorderColor();
-
-        return shape;
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 }

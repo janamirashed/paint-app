@@ -1,159 +1,63 @@
-package com.example.paintapp.dtos;
+package com.example.paintapp.services;
 
-public class ShapeDTO {
+import com.example.paintapp.dtos.ShapeDTO;
+import com.example.paintapp.shapes.*;
+import com.example.paintapp.shapes.base.Shape;
 
-    private String type;
+public class ShapeFactory {
 
-    private int x;
-    private int y;
+    public Shape createShape(ShapeDTO dto) {
 
-    private String fillColor;
-    private float borderWidth;
-    private float borderColor;
+        if (dto == null || dto.getType() == null) {
+            throw new IllegalArgumentException("Invalid ShapeDTO");
+        }
 
-    private Integer x2;
-    private Integer y2;
+        Shape shape;
 
-    private Integer radius;
+        switch (dto.getType().toLowerCase()) {
 
-    private Integer width;
-    private Integer height;
+            case "circle":
+                shape = new Circle();
+                break;
 
-    private Integer x3;
-    private Integer y3;
+            case "ellipse":
+                shape = new Ellipse();
+                break;
 
-    private Integer sideLength;
+            case "freehand":
+                shape = new Freehand();
+                break;
 
-    private Integer radiusX;
-    private Integer radiusY;
+            case "line":
+                shape = new Line();
+                break;
 
-    public ShapeDTO() {}
+            case "rectangle":
+                shape = new Rectangle();
+                break;
 
-    public String getType() {
-        return type;
-    }
+            case "square":
+                shape = new Square();
+                break;
 
-    public void setType(String type) {
-        this.type = type;
-    }
+            case "triangle":
+                shape = new Triangle();
+                break;
 
-    public int getX() {
-        return x;
-    }
+            default:
+                throw new IllegalArgumentException("Unknown shape type: " + dto.getType());
+        }
 
-    public void setX(int x) {
-        this.x = x;
-    }
+        // Set shared fields
+        shape.setType(dto.getType());
+        shape.x = dto.getX();
+        shape.y = dto.getY();
 
-    public int getY() {
-        return y;
-    }
+        // Set all extra properties (radius, width, height, etc.)
+        if (dto.getProperties() != null) {
+            shape.setProperties(dto.getProperties());
+        }
 
-    public void setY(int y) {
-        this.y = y;
-    }
-
-    public String getFillColor() {
-        return fillColor;
-    }
-
-    public void setFillColor(String fillColor) {
-        this.fillColor = fillColor;
-    }
-
-    public float getBorderWidth() {
-        return borderWidth;
-    }
-
-    public void setBorderWidth(float borderWidth) {
-        this.borderWidth = borderWidth;
-    }
-
-    public float getBorderColor() {
-        return borderColor;
-    }
-
-    public void setBorderColor(float borderColor) {
-        this.borderColor = borderColor;
-    }
-
-    public Integer getX2() {
-        return x2;
-    }
-
-    public void setX2(Integer x2) {
-        this.x2 = x2;
-    }
-
-    public Integer getY2() {
-        return y2;
-    }
-
-    public void setY2(Integer y2) {
-        this.y2 = y2;
-    }
-
-    public Integer getRadius() {
-        return radius;
-    }
-
-    public void setRadius(Integer radius) {
-        this.radius = radius;
-    }
-
-    public Integer getWidth() {
-        return width;
-    }
-
-    public void setWidth(Integer width) {
-        this.width = width;
-    }
-
-    public Integer getHeight() {
-        return height;
-    }
-
-    public void setHeight(Integer height) {
-        this.height = height;
-    }
-
-    public Integer getX3() {
-        return x3;
-    }
-
-    public void setX3(Integer x3) {
-        this.x3 = x3;
-    }
-
-    public Integer getY3() {
-        return y3;
-    }
-
-    public void setY3(Integer y3) {
-        this.y3 = y3;
-    }
-
-    public Integer getSideLength() {
-        return sideLength;
-    }
-
-    public void setSideLength(Integer sideLength) {
-        this.sideLength = sideLength;
-    }
-
-    public Integer getRadiusX() {
-        return radiusX;
-    }
-
-    public void setRadiusX(Integer radiusX) {
-        this.radiusX = radiusX;
-    }
-
-    public Integer getRadiusY() {
-        return radiusY;
-    }
-
-    public void setRadiusY(Integer radiusY) {
-        this.radiusY = radiusY;
+        return shape;
     }
 }
