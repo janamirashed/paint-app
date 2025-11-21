@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Angular build & cache
+/dist
+/.angular
+/.angular/cache
+/.angular-build
+/out-tsc
+/.tsbuildinfo
+
+# IDEs and OS files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.vscode/
+*.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
