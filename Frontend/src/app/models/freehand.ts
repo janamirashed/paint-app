@@ -1,42 +1,20 @@
-import { Shape } from "./shape";
+import { Shape } from './shape';
 
 export class Freehand extends Shape {
-  points: { x: number; y: number }[] = [];
-
   constructor(x1: number, y1: number, x2: number, y2: number, properties: { [key: string]: any } = {}) {
-    super('freehand', x1, y1, x2, y2, properties);
-    
-    this.points = [{ x: x1, y: y1 }];
-
-    if (!this.properties['points']) {
-      this.properties['points'] = this.points;
-    }
-  }
-
- 
-  addPoint(x: number, y: number): void {
-    this.points.push({ x, y });
-    this.properties['points'] = this.points;
-    this.x2 = x;
-    this.y2 = y;
-  }
-
-  
-  getPoints(): { x: number; y: number }[] {
-    return this.points;
-  }
-
-  
-  override toJSON(): any {
-    return {
-      ...super.toJSON?.() || {},
-      type: this.type,
-      x1: this.x1,
-      y1: this.y1,
-      x2: this.x2,
-      y2: this.y2,
-      points: this.points,
-      properties: this.properties
+    const props = {
+      points: properties['points'] ?? [],
+      strokeColor: properties['strokeColor'] ?? '#000000',
+      opacity: properties['opacity'] ?? 1,
+      strokeWidth: properties['strokeWidth'] ?? 2,
+      lineStyle: properties['lineStyle'] ?? 'solid',
+      ...properties
     };
+    super('freehand', x1, y1, x2, y2, props);
+  }
+
+  addPoint(x: number, y: number) {
+    if (!this.properties['points']) this.properties['points'] = [];
+    this.properties['points'].push({ x, y });
   }
 }

@@ -1,15 +1,15 @@
 import { Shape } from './shape';
 
 export class Ellipse extends Shape {
-  radius: number;
-  constructor(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    properties: { [key: string]: any } = {}
-  ) {
-    super('ellipse', x1, y1, x2, y2, properties);
-    this.radius = 0;
+  constructor(x1: number, y1: number, x2: number, y2: number, properties: { [key: string]: any } = {}) {
+    const props = {
+      strokeColor: properties['strokeColor'] ?? '#000000',
+      fillColor: properties['fillColor'] ?? 'transparent',
+      opacity: properties['opacity'] ?? 1,
+      strokeWidth: properties['strokeWidth'] ?? 2,
+      lineStyle: properties['lineStyle'] ?? 'solid',
+      ...properties
+    };
+    super('ellipse', x1, y1, x2, y2, props);
   }
 }

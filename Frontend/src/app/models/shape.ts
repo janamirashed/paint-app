@@ -2,11 +2,11 @@ export abstract class Shape {
   type: string;
   x1: number;
   y1: number;
-  x2: number
+  x2: number;
   y2: number;
   properties: { [key: string]: any };
 
-  constructor(type: string, x1: number, y1: number,x2:number,y2:number, properties: { [key: string]: any } = {}) {
+  constructor(type: string, x1: number, y1: number, x2: number, y2: number, properties: { [key: string]: any } = {}) {
     this.type = type;
     this.x1 = x1;
     this.y1 = y1;
@@ -15,7 +15,7 @@ export abstract class Shape {
     this.properties = properties;
   }
 
-    toJSON() {
+  toJSON() {
     return {
       type: this.type,
       x1: this.x1,
