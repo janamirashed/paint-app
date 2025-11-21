@@ -1,8 +1,44 @@
 <aside class="side-toolbar">
-  <button class="tool-btn active">🖊️</button>
-  <button class="tool-btn">⬚</button>
-  <button class="tool-btn">−</button>
-  <button class="tool-btn">○</button>
-  <button class="tool-btn">▢</button>
-  <button class="tool-btn">△</button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('freehand'); setActive('freehand')"
+    [class.active]="activeButton === 'freehand'"
+  >
+    🖊️
+  </button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('line'); setActive('line')"
+    [class.active]="activeButton === 'line'"
+  >
+    −
+  </button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('circle');setActive('circle')"
+    [class.active]="activeButton === 'circle'"
+  >
+    ○
+  </button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('rectangle');setActive('rectangle')"
+    [class.active]="activeButton === 'rectangle'"
+  >
+    ▢
+  </button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('triangle'); setActive('triangle')"
+    [class.active]="activeButton === 'triangle'"
+  >
+    △
+  </button>
+  <button
+    class="tool-btn"
+    (click)="selectTool('ellipse');setActive('ellipse')"
+    [class.active]="activeButton === 'ellipse'"
+  >
+    ⬭
+  </button>
 </aside>

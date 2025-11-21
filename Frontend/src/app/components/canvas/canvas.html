@@ -1,3 +1,11 @@
 <div class="canvas-container">
-  <div class="canvas"></div>
+  <canvas
+    #canvas
+    width="800"
+    height="500"
+    (mousedown)="onMouseDown($event)"
+    (mouseup)="onMouseUp($event)"
+    (mousemove)="onMouseMove($event)"
+  >
+  </canvas>
 </div>

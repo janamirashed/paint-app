@@ -6,7 +6,7 @@ import java.util.Map;
 
 public abstract class Shape implements Cloneable{
     protected String type;
-    protected  int x;
+    protected int x;
     protected int y;
     protected Map<String, Object> properties = new HashMap<>();
 

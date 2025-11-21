@@ -27,6 +27,8 @@
 }
 
 .tool-btn.active {
-  background: #111;
-  color: #fff;
+  border-color: #3b82f6;
+  background: #acbbc6;
 }
+
+

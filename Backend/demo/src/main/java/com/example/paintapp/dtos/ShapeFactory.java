@@ -1,6 +1,6 @@
-package com.example.paintapp.services;
+package com.example.paintapp.dtos;
 
-import com.example.paintapp.dtos.ShapeDTO;
+import com.example.paintapp.services.ShapeDTO;
 import com.example.paintapp.shapes.*;
 import com.example.paintapp.shapes.base.Shape;
 

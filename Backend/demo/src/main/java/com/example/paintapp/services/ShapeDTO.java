@@ -1,4 +1,4 @@
-package com.example.paintapp.dtos;
+package com.example.paintapp.services;
 
 import java.util.Map;
 

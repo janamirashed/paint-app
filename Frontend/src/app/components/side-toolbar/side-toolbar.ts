@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-side-toolbar',
@@ -7,5 +7,13 @@ import { Component } from '@angular/core';
   styleUrl: './side-toolbar.css',
 })
 export class SideToolbar {
+  @Output() toolSelected = new EventEmitter<string>();
+  activeButton: string = '';
 
+  selectTool(tool: string) {
+    this.toolSelected.emit(tool);
+  }
+  setActive(btn: string) {
+    this.activeButton = btn;
+  }
 }

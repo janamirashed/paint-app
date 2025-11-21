@@ -2,8 +2,9 @@
   <app-header-toolbar></app-header-toolbar>
 
   <div class="main-layout">
-    <app-side-toolbar></app-side-toolbar>
-    <app-canvas></app-canvas>
-    <app-properties-panel></app-properties-panel>
+    <app-side-toolbar (toolSelected)="onToolChange($event)"></app-side-toolbar>
+    <app-canvas   [activeTool]="currentTool"></app-canvas>
+
+    <app-properties-panel ></app-properties-panel>
   </div>
 </div>
