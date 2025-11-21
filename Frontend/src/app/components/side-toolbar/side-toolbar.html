@@ -29,6 +29,13 @@
   </button>
   <button
     class="tool-btn"
+    (click)="selectTool('square'); setActive('square')"
+    [class.active]="activeButton === 'square'"
+  >
+    ▣
+  </button>
+  <button
+    class="tool-btn"
     (click)="selectTool('triangle'); setActive('triangle')"
     [class.active]="activeButton === 'triangle'"
   >

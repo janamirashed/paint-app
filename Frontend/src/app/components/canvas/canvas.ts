@@ -11,7 +11,7 @@ import { Shape } from '../../models/shape';
 export class Canvas implements AfterViewInit {
   ctx!: CanvasRenderingContext2D;
   drawing = false;
-  
+
   currentShape: Shape | null = null;
   shapeRegister: Shape[] = [];
 
@@ -31,20 +31,20 @@ export class Canvas implements AfterViewInit {
   @Input() activeTool: string = 'freehand';
   @Input() currentProperties: any = this.properties;
 
- 
+
 
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
     this.ctx = canvas.getContext('2d')!;
-   
+
 
     this.ctx.lineWidth = 2;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
     this.ctx.strokeStyle = 'black';
-   
+
   }
 
   onMouseDown(event: MouseEvent) {
@@ -52,21 +52,21 @@ export class Canvas implements AfterViewInit {
     this.startX = event.offsetX;
     this.startY = event.offsetY;
 
-    
+
     this.currentShape = ShapeFactory.createShape(
       this.activeTool,
       this.startX,
       this.startY,
       this.startX,
       this.startY,
-      this.properties = { 
-      ...this.currentShape?.properties, 
+      this.properties = {
+      ...this.currentShape?.properties,
       ...this.currentProperties   // append to the old properties (like points in freehand)
-    
+
      }
     );
 
-   
+
     if (this.activeTool === 'freehand') {
       if (!this.currentShape.properties) {
         this.currentShape.properties = {};
@@ -87,7 +87,7 @@ export class Canvas implements AfterViewInit {
     const y = event.offsetY;
 
     if (this.currentShape) {
-      
+
       this.currentShape.x2 = x;
       this.currentShape.y2 = y;
 
@@ -107,22 +107,29 @@ export class Canvas implements AfterViewInit {
     const y = event.offsetY;
 
     if (this.activeTool === 'freehand') {
-      
+
       if ('addPoint' in this.currentShape && typeof this.currentShape.addPoint === 'function') {
         (this.currentShape as any).addPoint(x, y);
       } else {
-        
+
         if (!this.currentShape.properties['points']) {
           this.currentShape.properties['points'] = [];
         }
         this.currentShape.properties['points'].push({ x, y });
       }
 
-      
       this.ctx.lineTo(x, y);
       this.ctx.stroke();
-    } else {
-  
+    }
+    // else if(this.activeTool === 'square') {
+    //     const side = Math.min(Math.abs(x - this.startX), Math.abs(y - this.startY));
+    //     this.currentShape.x2 = x >= this.startX ? this.startX + side : this.startX - side;
+    //     this.currentShape.y2 = y >= this.startY ? this.startY + side : this.startY - side;
+    //     this.redrawAllShapes();
+    //     this.drawShape(this.currentShape);
+    //   }
+    else {
+
       this.currentShape.x2 = x;
       this.currentShape.y2 = y;
 
@@ -138,23 +145,35 @@ export class Canvas implements AfterViewInit {
 
     this.ctx.beginPath();
 
+    const drawX = x2 >= x1 ? x1 : x1 - width;
+    const drawY = y2 >= y1 ? y1 : y1 - height;
+
     switch (type) {
+      case 'square': {
+        const side = Math.min(width, height);
+        const sx = x2 >= x1 ? x1 : x1 - side;
+        const sy = y2 >= y1 ? y1 : y1 - side;
+        this.ctx.strokeRect(sx, sy, side, side);
+        break;
+      }
+
       case 'rectangle':
-        this.ctx.strokeRect(x1, y1, width, height);
+        this.ctx.strokeRect(drawX, drawY, width, height);
         break;
 
       case 'circle': {
-        const radius = Math.sqrt(width * width + height * height);
+        const radius = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        this.ctx.beginPath();
         this.ctx.arc(x1, y1, radius, 0, Math.PI * 2);
         this.ctx.stroke();
         break;
       }
 
       case 'ellipse': {
-        const radiusX = Math.abs(width) / 2;
-        const radiusY = Math.abs(height) / 2;
-        const centerX = x1 + width / 2;
-        const centerY = y1 + height / 2;
+        const radiusX = width / 2;
+        const radiusY = height / 2;
+        const centerX = drawX + radiusX;
+        const centerY = drawY + radiusY;
         this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
         this.ctx.stroke();
         break;
@@ -168,17 +187,15 @@ export class Canvas implements AfterViewInit {
 
       case 'triangle':
         this.ctx.moveTo(x1, y1);
-        this.ctx.lineTo(x2, y2);
-        this.ctx.lineTo(x1, y2);
+        this.ctx.lineTo(x2, y1);
+        this.ctx.lineTo(drawX, y2);
         this.ctx.closePath();
         this.ctx.stroke();
         break;
 
       case 'freehand':
-        // Draw freehand path from  points
         const points: { x: number; y: number }[] = properties?.['points'] || [];
         if (points.length === 0) return;
-
         this.ctx.moveTo(points[0].x, points[0].y);
         for (let i = 1; i < points.length; i++) {
           this.ctx.lineTo(points[i].x, points[i].y);
@@ -192,6 +209,7 @@ export class Canvas implements AfterViewInit {
     }
   }
 
+
   redrawAllShapes() {
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
@@ -201,7 +219,7 @@ export class Canvas implements AfterViewInit {
   }
 
   clearCanvas() {
-    // Clear 
+    // Clear
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
     // empty register

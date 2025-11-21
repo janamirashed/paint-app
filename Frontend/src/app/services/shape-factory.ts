@@ -6,6 +6,7 @@ import { Triangle } from '../models/triangle';
 import { Freehand } from '../models/freehand';
 import { Shape } from '../models/shape';
 import { Ellipse } from '../models/ellipse';
+import {Square} from '../models/square';
 @Injectable({
   providedIn: 'root',
 })
@@ -24,6 +25,8 @@ export class ShapeFactory {
         return new Triangle(x1, y1,x2,y2, properties);
       case 'ellipse':
         return new Ellipse(x1, y1,x2,y2, properties);
+      case 'square':
+        return new Square(x1, y1, x2, y2, properties);
       default:
         throw new Error('Unknown shape type: ' + type);
     }
