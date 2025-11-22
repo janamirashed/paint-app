@@ -10,6 +10,6 @@ public class Rectangle extends Shape {
     //For Debugging
     @Override
     public void draw() {
-        System.out.println("Drawing Rectangle at (" + x + "," + y + ") with properties: " + properties);
+        System.out.println("Drawing Rectangle at (" + x1 + "," + y1 + ") with properties: " + properties);
     }
 }

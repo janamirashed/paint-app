@@ -10,6 +10,6 @@ public class Square extends Shape {
     //For Debugging
     @Override
     public void draw() {
-        System.out.println("Drawing Square at (" + x + "," + y + ") with properties: " + properties);
+        System.out.println("Drawing Square at (" + x1 + "," + y1 + ") with properties: " + properties);
     }
 }

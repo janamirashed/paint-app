@@ -10,6 +10,6 @@ public class Circle extends Shape {
     //For Debugging
     @Override
     public void draw() {
-        System.out.println("Drawing Circle at (" + x + "," + y + ") with properties: " + properties);
+        System.out.println("Drawing Circle at (" + x1 + "," + y1 + ") with properties: " + properties);
     }
 }

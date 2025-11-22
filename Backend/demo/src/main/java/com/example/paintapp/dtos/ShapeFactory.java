@@ -6,7 +6,7 @@ import com.example.paintapp.shapes.base.Shape;
 
 public class ShapeFactory {
 
-    public Shape createShape(ShapeDTO dto) {
+    public static Shape  createShape(ShapeDTO dto) {
 
         if (dto == null || dto.getType() == null) {
             throw new IllegalArgumentException("Invalid ShapeDTO");
@@ -50,8 +50,10 @@ public class ShapeFactory {
 
         // Set shared fields
         shape.setType(dto.getType());
-        shape.x = dto.getX();
-        shape.y = dto.getY();
+        shape.setX1(dto.getX1());
+        shape.setY1(dto.getY1());
+        shape.setX2(dto.getX2());
+        shape.setY2(dto.getY2());
 
         // Set all extra properties (radius, width, height, etc.)
         if (dto.getProperties() != null) {

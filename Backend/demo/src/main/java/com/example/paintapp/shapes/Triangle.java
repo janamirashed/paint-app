@@ -10,6 +10,6 @@ public class Triangle extends Shape {
     //For Debugging
     @Override
     public void draw() {
-        System.out.println("Drawing Triangle at (" + x + "," + y + ") with properties: " + properties);
+        System.out.println("Drawing Triangle at (" + x1 + "," + y1 + ") with properties: " + properties);
     }
 }

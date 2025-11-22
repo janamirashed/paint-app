@@ -10,6 +10,6 @@ public class Line extends Shape {
     //For Debugging
     @Override
     public void draw() {
-        System.out.println("Drawing Line at (" + x + "," + y + ") with properties: " + properties);
+        System.out.println("Drawing Line at (" + x1 + "," + y1 + ") with properties: " + properties);
     }
 }
