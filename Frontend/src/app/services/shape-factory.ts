@@ -6,7 +6,8 @@ import { Triangle } from '../models/triangle';
 import { Freehand } from '../models/freehand';
 import { Shape } from '../models/shape';
 import { Ellipse } from '../models/ellipse';
-import {Square} from '../models/square';
+import { Square } from '../models/square';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -21,7 +22,8 @@ export class ShapeFactoryService {
     properties: any
   ): Shape {
 
-    switch (type) {
+    switch (type.toLowerCase()) {
+
       case 'circle':
         return new Circle(x1, y1, x2, y2, properties);
 
@@ -33,6 +35,12 @@ export class ShapeFactoryService {
 
       case 'line':
         return new Line(x1, y1, x2, y2, properties);
+
+      case 'triangle':
+        return new Triangle(x1, y1, x2, y2, properties);
+
+      case 'ellipse':
+        return new Ellipse(x1, y1, x2, y2, properties);
 
       case 'freehand':
         return new Freehand(x1, y1, x2, y2, properties);

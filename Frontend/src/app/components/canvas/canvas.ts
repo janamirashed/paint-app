@@ -1,5 +1,5 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
-import { ShapeFactory } from '../../services/shape-factory';
+import { ShapeFactoryService } from '../../services/shape-factory';
 import { Shape } from '../../models/shape';
 
 @Component({
@@ -10,6 +10,9 @@ import { Shape } from '../../models/shape';
   styleUrls: ['./canvas.css'],
 })
 export class Canvas implements AfterViewInit {
+
+  constructor(private shapeFactory: ShapeFactoryService) {}
+
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @Output() shapeSelected = new EventEmitter<Shape>();
   @Input() activeTool: string = 'freehand';
@@ -36,7 +39,6 @@ export class Canvas implements AfterViewInit {
     this.ctx.strokeStyle = 'black';
   }
 
-  // allow parent or properties panel to push new props
   onPropertiesChanged(newProps: any) {
     this.currentProperties = { ...newProps };
   }
@@ -46,20 +48,22 @@ export class Canvas implements AfterViewInit {
     this.startX = event.offsetX;
     this.startY = event.offsetY;
 
-    // Create shape using the factory and pass currentProperties
-    this.currentShape = ShapeFactory.createShape(
+    // Create shape using injected service
+    this.currentShape = this.shapeFactory.createShape(
       this.activeTool,
       this.startX,
       this.startY,
       this.startX,
       this.startY,
-      { ...this.currentProperties } // pass current properties to new shape
+      { ...this.currentProperties }
     );
 
     if (this.activeTool === 'freehand') {
+
       if (!this.currentShape.properties['points']) {
         this.currentShape.properties['points'] = [];
       }
+
       this.currentShape.properties['points'].push({ x: this.startX, y: this.startY });
 
       this.ctx.beginPath();
@@ -81,6 +85,7 @@ export class Canvas implements AfterViewInit {
       this.shapeRegister.push(this.currentShape);
       this.shapeSelected.emit(this.currentShape);
       this.currentShape = null;
+
       this.redrawAllShapes();
     }
   }
@@ -93,15 +98,17 @@ export class Canvas implements AfterViewInit {
     if (!this.currentShape) return;
 
     if (this.activeTool === 'freehand') {
+
       if (!this.currentShape.properties['points']) {
         this.currentShape.properties['points'] = [];
       }
+
       this.currentShape.properties['points'].push({ x, y });
 
-      // draw incremental freehand
       this.ctx.lineTo(x, y);
       this.applyDrawingStyle(this.currentShape);
       this.ctx.stroke();
+
     } else {
       this.currentShape.x2 = x;
       this.currentShape.y2 = y;
@@ -111,7 +118,6 @@ export class Canvas implements AfterViewInit {
     }
   }
 
-  // central apply style helper
   applyDrawingStyle(shape: Shape) {
     const props = shape.properties || {};
     this.ctx.lineWidth = props['strokeWidth'] ?? 1;
@@ -132,8 +138,6 @@ export class Canvas implements AfterViewInit {
     const height = Math.abs(y2 - y1);
 
     this.ctx.beginPath();
-
-    // apply style for this shape
     this.applyDrawingStyle(shape);
 
     const drawX = x2 >= x1 ? x1 : x1 - width;
@@ -194,8 +198,8 @@ export class Canvas implements AfterViewInit {
         this.ctx.stroke();
         break;
 
-      case 'freehand':
-        const points: { x: number; y: number }[] = properties?.['points'] || [];
+      case 'freehand': {
+        const points = properties?.['points'] || [];
         if (points.length === 0) return;
         this.ctx.beginPath();
         this.ctx.moveTo(points[0].x, points[0].y);
@@ -204,13 +208,13 @@ export class Canvas implements AfterViewInit {
         }
         this.ctx.stroke();
         break;
+      }
 
       default:
         console.warn('Unknown shape type:', type);
         break;
     }
 
-    // reset alpha and dash to defaults after drawing
     this.ctx.globalAlpha = 1;
     this.ctx.setLineDash([]);
   }
