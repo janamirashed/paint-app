@@ -10,27 +10,34 @@ import { SideToolbar } from './components/side-toolbar/side-toolbar';
   imports: [PropertiesPanel, Canvas, HeaderToolbar, SideToolbar],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  
 })
 export class App {
+  @ViewChild(Canvas) canvas!: Canvas;
 
-   @ViewChild(Canvas) canvas!: Canvas;
+  protected readonly title = signal('Frontend');
+  currentTool: string = 'freehand';
+  currentProperties: { [key: string]: any } = {
+    strokeWidth: 5,
+    strokeColor: '#000000',
+    fillColor: 'transparent',
+    opacity: 1,
+    lineStyle: 'solid'
+  };
+
   clearCanvas() {
     if (this.canvas) {
       this.canvas.clearCanvas();
     }
   }
 
-  protected readonly title = signal('Frontend');
-  currentTool: string = 'freehand';
-  static canvas: any;
-
   onToolChange(tool: string) {
     this.currentTool = tool;
   }
 
-  
+  onPropertiesChange(properties: { [key: string]: any }) {
+    this.currentProperties = { ...properties };
+    if (this.canvas) {
+      this.canvas.onPropertiesChanged(this.currentProperties);
+    }
+  }
 }
-
-
-

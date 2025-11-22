@@ -3,8 +3,14 @@
 
   <div class="main-layout">
     <app-side-toolbar (toolSelected)="onToolChange($event)"></app-side-toolbar>
-    <app-canvas   [activeTool]="currentTool"></app-canvas>
 
-    <app-properties-panel ></app-properties-panel>
+    <app-canvas
+      [activeTool]="currentTool"
+      [currentProperties]="currentProperties">
+    </app-canvas>
+
+    <app-properties-panel
+      (propertiesChanged)="onPropertiesChange($event)">
+    </app-properties-panel>
   </div>
 </div>

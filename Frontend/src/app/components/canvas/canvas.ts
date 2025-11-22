@@ -16,7 +16,13 @@ export class Canvas implements AfterViewInit {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @Output() shapeSelected = new EventEmitter<Shape>();
   @Input() activeTool: string = 'freehand';
-  @Input() currentProperties: { [key: string]: any } = {};
+  @Input() currentProperties: { [key: string]: any } = {
+    strokeWidth: 5,
+    strokeColor: '#000000',
+    fillColor: 'transparent',
+    opacity: 1,
+    lineStyle: 'solid'
+  };
 
   ctx!: CanvasRenderingContext2D;
   drawing = false;
@@ -41,6 +47,7 @@ export class Canvas implements AfterViewInit {
 
   onPropertiesChanged(newProps: any) {
     this.currentProperties = { ...newProps };
+    console.log('Properties updated in canvas:', this.currentProperties);
   }
 
   onMouseDown(event: MouseEvent) {
