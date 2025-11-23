@@ -166,7 +166,7 @@ export class Canvas implements AfterViewInit {
         break;
 
       case 'circle': {
-        const radius = properties['radius'] ?? Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        const radius = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
         this.ctx.beginPath();
         this.ctx.arc(x1, y1, radius, 0, Math.PI * 2);
         if (this.ctx.fillStyle !== 'transparent') this.ctx.fill();

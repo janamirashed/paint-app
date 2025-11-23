@@ -10,7 +10,9 @@
     </app-canvas>
 
     <app-properties-panel
-      (propertiesChanged)="onPropertiesChange($event)">
+      (propertiesChanged)="onPropertiesChange($event)"
+      (clear)="clearCanvas()">
+
     </app-properties-panel>
   </div>
 </div>
