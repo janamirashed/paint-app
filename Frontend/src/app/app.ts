@@ -34,10 +34,13 @@ export class App {
     this.currentTool = tool;
   }
 
+  // onPropertiesChange(properties: { [key: string]: any }) {
+  //   this.currentProperties = { ...properties };
+  //   if (this.canvas) {
+  //     this.canvas.onPropertiesChanged(this.currentProperties);
+  //   }
+  // }
   onPropertiesChange(properties: { [key: string]: any }) {
     this.currentProperties = { ...properties };
-    if (this.canvas) {
-      this.canvas.onPropertiesChanged(this.currentProperties);
-    }
   }
 }
