@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output} from '@angular/core';
 import { HttpService } from '../../services/http.service';
 
 @Component({
@@ -8,6 +8,8 @@ import { HttpService } from '../../services/http.service';
   styleUrl: './header-toolbar.css',
 })
 export class HeaderToolbar {
+
+  @Output() shapesImported = new EventEmitter<void>();
 
   constructor(private httpService: HttpService) {}
 
@@ -72,7 +74,7 @@ export class HeaderToolbar {
     this.httpService.importJSON(content).subscribe({
       next: (message) => {
         alert('Imported successfully!');
-        window.location.reload();
+        this.shapesImported.emit();
       },
       error: (err) => {
         console.error('Error importing JSON:', err);
@@ -85,7 +87,7 @@ export class HeaderToolbar {
     this.httpService.importXML(content).subscribe({
       next: (message) => {
         alert('Imported successfully!');
-        window.location.reload();
+        this.shapesImported.emit();
       },
       error: (err) => {
         console.error('Error importing XML:', err);

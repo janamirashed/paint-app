@@ -1,6 +1,7 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
 import { ShapeFactoryService } from '../../services/shape-factory';
 import { Shape } from '../../models/shape';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-canvas',
@@ -11,7 +12,10 @@ import { Shape } from '../../models/shape';
 })
 export class Canvas implements AfterViewInit {
 
-  constructor(private shapeFactory: ShapeFactoryService) {}
+  constructor(
+    private shapeFactory: ShapeFactoryService,
+    private http: HttpClient
+  ) {}
 
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @Output() shapeSelected = new EventEmitter<Shape>();
@@ -90,11 +94,34 @@ export class Canvas implements AfterViewInit {
       this.currentShape.y2 = y;
 
       this.shapeRegister.push(this.currentShape);
+      this.saveShapeToBackend(this.currentShape);
       this.shapeSelected.emit(this.currentShape);
       this.currentShape = null;
 
       this.redrawAllShapes();
     }
+  }
+
+  private saveShapeToBackend(shape: Shape) {
+    const shapeDTO = {
+      type: shape.type,
+      x1: shape.x1,
+      y1: shape.y1,
+      x2: shape.x2,
+      y2: shape.y2,
+      properties: shape.properties
+    };
+
+    console.log('💾 Saving shape to backend:', shapeDTO);
+
+    this.http.post('http://localhost:8080/drawing/add', shapeDTO).subscribe({
+      next: () => {
+        console.log('Shape saved successfully');
+      },
+      error: (err) => {
+        console.error('Error saving shape:', err);
+      }
+    });
   }
 
   onMouseMove(event: MouseEvent) {
@@ -150,7 +177,7 @@ export class Canvas implements AfterViewInit {
     const drawX = x2 >= x1 ? x1 : x1 - width;
     const drawY = y2 >= y1 ? y1 : y1 - height;
 
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'square': {
         const side = Math.min(width, height);
         const sx = x2 >= x1 ? x1 : x1 - side;
@@ -242,6 +269,7 @@ export class Canvas implements AfterViewInit {
 
   loadShapes(shapes: any[]) {
     console.log('Loading shapes into canvas:', shapes);
+    console.log('Number of shapes:', shapes.length);
 
     this.shapeRegister = [];
 
@@ -254,9 +282,12 @@ export class Canvas implements AfterViewInit {
         shapeDTO.y2,
         shapeDTO.properties
       );
+
+      console.log('Created shape:', shape);
       this.shapeRegister.push(shape);
     }
 
+    console.log('Total shapes in register:', this.shapeRegister.length);
     this.redrawAllShapes();
   }
 }

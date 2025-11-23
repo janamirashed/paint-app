@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, OnInit } from '@angular/core';
+import { Component, signal, ViewChild, OnInit, AfterViewInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { PropertiesPanel } from './components/properties-panel/properties-panel';
 import { Canvas } from './components/canvas/canvas';
@@ -12,7 +12,7 @@ import { HttpClient } from '@angular/common/http';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit {
+export class App implements OnInit, AfterViewInit {
   @ViewChild(Canvas) canvas!: Canvas;
 
   protected readonly title = signal('Frontend');
@@ -35,6 +35,9 @@ export class App implements OnInit {
 
   // ADD THIS METHOD
   ngOnInit() {
+  }
+
+  ngAfterViewInit() {
     this.loadShapes();
   }
 
@@ -43,8 +46,12 @@ export class App implements OnInit {
       next: (shapes) => {
         console.log('Loaded shapes:', shapes);
         setTimeout(() => {
-          if (this.canvas && shapes.length > 0) {
-            this.canvas.loadShapes(shapes);
+          if (this.canvas) {
+            // Clear canvas first, then load new shapes
+            this.canvas.clearCanvas();
+            if (shapes.length > 0) {
+              this.canvas.loadShapes(shapes);
+            }
           }
         }, 100);
       },
