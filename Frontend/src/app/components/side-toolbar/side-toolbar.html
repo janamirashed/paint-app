@@ -6,6 +6,14 @@
   >
     🖊️
   </button>
+
+   <button
+    class="tool-btn"
+    (click)="selectTool('select'); setActive('select')"
+    [class.active]="activeButton === 'select'"
+  >
+    
+  </button>
   <button
     class="tool-btn"
     (click)="selectTool('line'); setActive('line')"

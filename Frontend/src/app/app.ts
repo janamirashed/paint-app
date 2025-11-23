@@ -12,7 +12,7 @@ import { HttpClient } from '@angular/common/http';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit, AfterViewInit {
+export class App /* implements OnInit, AfterViewInit */ {
   @ViewChild(Canvas) canvas!: Canvas;
 
   protected readonly title = signal('Frontend');
@@ -25,11 +25,7 @@ export class App implements OnInit, AfterViewInit {
     lineStyle: 'solid'
   };
 
-  clearCanvas() {
-    if (this.canvas) {
-      this.canvas.clearCanvas();
-    }
-  }
+
 
   constructor(private http: HttpClient) {}
 
@@ -37,11 +33,11 @@ export class App implements OnInit, AfterViewInit {
   ngOnInit() {
   }
 
-  ngAfterViewInit() {
+  /* ngAfterViewInit() {
     this.loadShapes();
-  }
+  } */
 
-  loadShapes() {
+  /* loadShapes() {
     this.http.get<any[]>('http://localhost:8080/drawing/all').subscribe({
       next: (shapes) => {
         console.log('Loaded shapes:', shapes);
@@ -59,7 +55,7 @@ export class App implements OnInit, AfterViewInit {
         console.error('Error loading shapes:', err);
       }
     });
-  }
+  } */
 
   onToolChange(tool: string) {
     this.currentTool = tool;
