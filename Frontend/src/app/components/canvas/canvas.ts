@@ -239,4 +239,24 @@ export class Canvas implements AfterViewInit {
     this.currentShape = null;
     this.drawing = false;
   }
+
+  loadShapes(shapes: any[]) {
+    console.log('Loading shapes into canvas:', shapes);
+
+    this.shapeRegister = [];
+
+    for (const shapeDTO of shapes) {
+      const shape = this.shapeFactory.createShape(
+        shapeDTO.type,
+        shapeDTO.x1,
+        shapeDTO.y1,
+        shapeDTO.x2,
+        shapeDTO.y2,
+        shapeDTO.properties
+      );
+      this.shapeRegister.push(shape);
+    }
+
+    this.redrawAllShapes();
+  }
 }

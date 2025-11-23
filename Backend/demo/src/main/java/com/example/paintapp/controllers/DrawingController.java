@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/drawing")
-@CrossOrigin(origins = "*")
+
 public class DrawingController {
 
     @Autowired
