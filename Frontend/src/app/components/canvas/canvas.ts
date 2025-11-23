@@ -45,10 +45,10 @@ export class Canvas implements AfterViewInit {
     this.ctx.strokeStyle = 'black';
   }
 
-  onPropertiesChanged(newProps: any) {
-    this.currentProperties = { ...newProps };
-    console.log('Properties updated in canvas:', this.currentProperties);
-  }
+  // onPropertiesChanged(newProps: any) {
+  //   this.currentProperties = { ...newProps };
+  //   console.log('Properties updated in canvas:', this.currentProperties);
+  // }
 
   onMouseDown(event: MouseEvent) {
     this.drawing = true;
