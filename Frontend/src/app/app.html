@@ -1,9 +1,18 @@
 <div class="paint-app">
-  <app-header-toolbar></app-header-toolbar>
+  <app-header-toolbar ></app-header-toolbar> <!-- (shapesImported)="loadShapes()" -->
 
   <div class="main-layout">
-    <app-side-toolbar></app-side-toolbar>
-    <app-canvas></app-canvas>
-    <app-properties-panel></app-properties-panel>
+    <app-side-toolbar (toolSelected)="onToolChange($event)"></app-side-toolbar>
+
+    <app-canvas
+      [activeTool]="currentTool"
+      [currentProperties]="currentProperties">
+    </app-canvas>
+
+    <app-properties-panel
+      (propertiesChanged)="onPropertiesChange($event)"
+      >
+
+    </app-properties-panel>
   </div>
 </div>

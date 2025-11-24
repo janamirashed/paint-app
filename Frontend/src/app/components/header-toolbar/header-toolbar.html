@@ -4,8 +4,8 @@
   <div class="actions">
     <button class="btn">↶ Undo</button>
     <button class="btn">↷ Redo</button>
-    <button class="btn">💾 Save</button>
-    <button class="btn">📂 Load</button>
-    <button class="btn">⬇️ Export</button>
+    <button class="btn" (click)="saveJSON()">💾 Save JSON</button>
+    <button class="btn" (click)="saveXML()">💾 Save XML</button>
+    <button class="btn" (click)="loadFile()">📂 Load</button>
   </div>
 </header>
