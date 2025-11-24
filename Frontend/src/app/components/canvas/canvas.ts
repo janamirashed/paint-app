@@ -292,7 +292,7 @@ export class Canvas implements AfterViewInit, OnChanges {
           [dto.x1, dto.y1, dto.x2, dto.y2],
           {
             ...commonProps,
-            fill: undefined // Lines don't have fill
+            fill: undefined
           }
         );
         break;
@@ -312,10 +312,26 @@ export class Canvas implements AfterViewInit, OnChanges {
       case 'freehand':
       case 'path':
         if (props.path) {
-          obj = new fabric.Path(props.path, {
-            ...commonProps,
-            fill: undefined // Freehand paths don't have fill
-          });
+          try {
+            let pathString = '';
+
+            // Handle both string format and array format
+            if (typeof props.path === 'string') {
+              pathString = props.path;
+            } else if (Array.isArray(props.path)) {
+              // Convert array format to string
+              pathString = props.path.join(' ');
+            }
+
+            if (pathString) {
+              obj = new fabric.Path(pathString, {
+                ...commonProps,
+                fill: undefined
+              });
+            }
+          } catch (error) {
+            console.error('Error creating path from DTO:', error, props.path);
+          }
         }
         break;
     }
