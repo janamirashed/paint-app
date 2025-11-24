@@ -1,20 +1,18 @@
 .canvas-container {
-  width: 820px; /* canvas width + padding */
-  height: 520px; /* canvas height + padding */
-  margin: 20px auto; /* center horizontally */
-  padding: 10px;
-  background: #f0f0f0; /* light gray background */
-  border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  flex: 1;
+  overflow: auto;
+  padding: 32px;
+  background-image: radial-gradient(#E8E8E8 1px, transparent 0);
+  background-size: 20px 20px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 canvas {
-  border: 2px solid #ccc; /* subtle border around the canvas */
-  border-radius: 10px;
-  background: #fff; /* white drawing surface */
+  display: block;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   cursor: crosshair;
-  
 }

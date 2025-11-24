@@ -1,25 +1,29 @@
 .side-toolbar {
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  padding: 10px;
+  background: #ffffff;
+  border-right: 1px solid #E5E5EA;
+  padding: 16px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  overflow-y: auto;
 }
 
 .tool-btn {
-  width: 45px;
-  height: 45px;
-  border: 1px solid #d1d5db;
+  width: 48px;
+  height: 48px;
+  border: none;
   border-radius: 8px;
-  background: #fff;
+  background: transparent;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all 0.25s ease;
+  color: #111518;
 }
 
 .tool-btn:hover {
@@ -27,8 +31,17 @@
 }
 
 .tool-btn.active {
-  border-color: #3b82f6;
-  background: #acbbc6;
+  background: rgba(168, 218, 255, 0.3);
+  color: #2563eb;
 }
 
+.tool-divider {
+  width: 32px;
+  height: 1px;
+  background: #E5E5EA;
+  margin: 4px 0;
+}
 
+.tool-spacer {
+  flex: 1;
+}

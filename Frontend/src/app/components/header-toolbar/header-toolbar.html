@@ -1,17 +1,23 @@
 <header class="header-toolbar">
-  <div class="logo">🖌️ Paint App</div>
+  <div class="logo">
+    <h2>Paint App</h2>
+  </div>
 
   <div class="actions">
-    <button (click)="onUndo()" title="Undo (Ctrl+Z)">
-      ↶ Undo
+    <button class="btn btn-icon" title="Undo">
+      <span class="icon-undo">↶</span>
     </button>
-
-    <button (click)="onRedo()" title="Redo (Ctrl+Y)">
-      ↷ Redo
+    <button class="btn btn-icon" title="Redo">
+      <span class="icon-redo">↷</span>
     </button>
-
-    <button class="btn" (click)="saveJSON()">💾 Save JSON</button>
-    <button class="btn" (click)="saveXML()">💾 Save XML</button>
-    <button class="btn" (click)="loadFile()">📂 Load</button>
+    <button class="btn" (click)="loadFile()">
+      <span>🗁 Load</span>
+    </button>
+    <button class="btn btn-primary" (click)="saveJSON()">
+      <span>🖫 Save JSON</span>
+    </button>
+    <button class="btn" (click)="saveXML()">
+      <span>🖫 Save XML</span>
+    </button>
   </div>
 </header>
