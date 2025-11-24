@@ -8,6 +8,7 @@ import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [PropertiesPanel, Canvas, HeaderToolbar, SideToolbar],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -26,6 +27,11 @@ export class App /* implements OnInit, AfterViewInit */ {
   };
 
   constructor(private http: HttpClient) {}
+
+  ngAfterViewInit() {
+    console.log('Canvas initialized:', this.canvas);
+  }
+
 
   onToolChange(tool: string) {
     this.currentTool = tool;

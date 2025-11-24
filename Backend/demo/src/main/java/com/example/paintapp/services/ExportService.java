@@ -3,6 +3,9 @@ package com.example.paintapp.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,7 +38,10 @@ public class ExportService {
     }
 
     // wrapper class for xml root element
+    @JacksonXmlRootElement(localName = "DrawingWrapper")
     public static class DrawingWrapper {
+        @JacksonXmlElementWrapper(useWrapping = false)
+        @JacksonXmlProperty(localName = "shapes")
         public List<ShapeDTO> shapes;
     }
 

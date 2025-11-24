@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input } from '@angular/core';
+import { Component, EventEmitter, Output, Input, ViewChild } from '@angular/core';
 import { HttpService } from '../../services/http.service';
 import { Canvas } from '../canvas/canvas';
 
@@ -11,7 +11,7 @@ import { Canvas } from '../canvas/canvas';
 export class HeaderToolbar {
 
   @Output() shapesImported = new EventEmitter<void>();
-  @Input() canvasComponent!: Canvas;
+  @Input() canvasComponent?: Canvas;
 
   constructor(private httpService: HttpService) {}
 
@@ -78,12 +78,15 @@ export class HeaderToolbar {
 
       if (this.canvasComponent) {
         this.canvasComponent.loadCanvasFromJSON(content);
-        alert('Imported successfully!');
+        alert('JSON imported successfully!');
 
+        // Sync with backend
         this.httpService.importJSON(content).subscribe({
           next: () => console.log('Synced with backend'),
           error: (err) => console.error('Backend sync failed:', err)
         });
+      } else {
+        alert('Canvas not ready');
       }
     } catch (error) {
       console.error('Invalid JSON:', error);
@@ -92,18 +95,26 @@ export class HeaderToolbar {
   }
 
   private importXML(content: string) {
+    if (!this.canvasComponent) {
+      alert('Canvas not ready');
+      return;
+    }
+
     this.httpService.importXML(content).subscribe({
       next: (message) => {
-        alert('Imported successfully!');
-        this.shapesImported.emit();
+        console.log('Backend response:', message);
 
-        if (this.canvasComponent) {
-          this.canvasComponent.loadShapesFromBackend();
-        }
+        // Wait a bit for backend to process, then reload
+        setTimeout(() => {
+          if (this.canvasComponent) {
+            this.canvasComponent.loadShapesFromBackend();
+            alert('XML imported successfully!');
+          }
+        }, 100);
       },
       error: (err) => {
         console.error('Error importing XML:', err);
-        alert('Failed to import');
+        alert('Failed to import XML: ' + err.message);
       }
     });
   }
