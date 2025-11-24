@@ -4,81 +4,107 @@ import com.example.paintapp.dtos.ShapeFactory;
 import com.example.paintapp.shapes.base.Shape;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class DrawingService {
+    //to maintain insertion order and allow search by ID
+    private Map<String, Shape> shapes = new LinkedHashMap<>();
+    //private List<Shape> shapes = new ArrayList<>();
 
-    private List<Shape> shapes = new ArrayList<>();
-    private Stack<List<Shape>> undoStack = new Stack<>();
-    private Stack<List<Shape>> redoStack = new Stack<>();
+    private Stack<Map<String, Shape>> undoStack = new Stack<>();
+    private Stack<Map<String, Shape>> redoStack = new Stack<>();
     private static final int MAX_HISTORY_SIZE = 50;
 
     public void saveState() {
         // Deep copy current shapes list
-        List<Shape> snapshot = new ArrayList<>();
-        for (Shape shape : shapes) {
-            snapshot.add(cloneShape(shape));
+        Map<String, Shape> snapshot = new LinkedHashMap<>();
+        for (Map.Entry<String, Shape> entry : shapes.entrySet()) {
+            snapshot.put(entry.getKey(), cloneShape(entry.getValue()));
         }
         undoStack.push(snapshot);
+
         if (undoStack.size() > MAX_HISTORY_SIZE) {
             undoStack.remove(0);
         }
         // Clear redo stack when new action is performed
         redoStack.clear();
+        System.out.println("State saved. Undo stack size: " + undoStack.size());
     }
 
 
     public void addShape(ShapeDTO dto) {
-        try {
-            // Use Factory Pattern to create shape
-            Shape shape = ShapeFactory.createShape(dto);
-            shapes.add(shape);
-            System.out.println("Added " + shape.getType() + ". Total shapes: " + shapes.size());
-        } catch (Exception e) {
-            System.err.println("Error creating shape: " + e.getMessage());
+        if (dto.getId() == null || dto.getId().isEmpty()) {
+            throw new IllegalArgumentException("Shape must have an ID");
         }
+
+        Shape shape = ShapeFactory.createShape(dto);
+        shape.setId(dto.getId());
+        shapes.put(dto.getId(), shape);
+
+        System.out.println("Shape added with ID: " + dto.getId());
+    }
+
+    public boolean updateShape(ShapeDTO dto) {
+        if (dto.getId() == null || dto.getId().isEmpty()) {
+            throw new IllegalArgumentException("Shape must have an ID for update");
+        }
+
+        if (shapes.containsKey(dto.getId())) {
+            Shape updated = ShapeFactory.createShape(dto);
+            updated.setId(dto.getId());
+            shapes.put(dto.getId(), updated);
+
+            System.out.println("Updated shape ID: " + dto.getId());
+            return true;
+        }
+
+        System.out.println("Shape not found for update: " + dto.getId());
+        return false;
     }
 
     public List<ShapeDTO> getAll() {
-        // Convert shapes back to DTOs
-        return shapes.stream()
-                .map(this::shapeToDTO)
-                .collect(Collectors.toList());
+        return shapes.values().stream().map(this::shapeToDTO).toList();
     }
 
     // Undo operation
     public List<ShapeDTO> undo() {
         if (undoStack.isEmpty()) {
+            System.out.println("Nothing to undo");
             return getAll();
         }
         // Save current state to redo stack
-        List<Shape> currentSnapshot = new ArrayList<>();
-        for (Shape shape : shapes) {
-            currentSnapshot.add(cloneShape(shape));
+        Map<String, Shape> currentSnapshot = new LinkedHashMap<>();
+        for (Map.Entry<String, Shape> entry : shapes.entrySet()) {
+            currentSnapshot.put(entry.getKey(), cloneShape(entry.getValue()));
         }
         redoStack.push(currentSnapshot);
+
         // Restore previous state
         shapes = undoStack.pop();
+
+        System.out.println("Undo performed. Shapes count: " + shapes.size());
         return getAll();
     }
 
     // Redo operation
     public List<ShapeDTO> redo() {
         if (redoStack.isEmpty()) {
+            System.out.println("Nothing to redo");
             return getAll();
         }
         // Save current state to undo stack
-        List<Shape> currentSnapshot = new ArrayList<>();
-        for (Shape shape : shapes) {
-            currentSnapshot.add(cloneShape(shape));
+        Map<String, Shape> currentSnapshot = new LinkedHashMap<>();
+        for (Map.Entry<String, Shape> entry : shapes.entrySet()) {
+            currentSnapshot.put(entry.getKey(), cloneShape(entry.getValue()));
         }
         undoStack.push(currentSnapshot);
+
         // Restore next state
         shapes = redoStack.pop();
+
+        System.out.println("Redo performed. Shapes count: " + shapes.size());
         return getAll();
     }
 
@@ -92,11 +118,14 @@ public class DrawingService {
 
     private Shape cloneShape(Shape original) {
         ShapeDTO dto = shapeToDTO(original);
-        return ShapeFactory.createShape(dto);
+        Shape cloned = ShapeFactory.createShape(dto);
+        cloned.setId(original.getId());
+        return cloned;
     }
 
     private ShapeDTO shapeToDTO(Shape shape) {
         ShapeDTO dto = new ShapeDTO();
+        dto.setId(shape.getId());
         dto.setType(shape.getType());
         dto.setX1(shape.getX1());
         dto.setY1(shape.getY1());

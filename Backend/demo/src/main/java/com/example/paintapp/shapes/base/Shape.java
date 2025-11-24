@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class Shape implements Cloneable{
+    protected String id;
     protected String type;
     protected double x1,x2,y1,y2;
 
@@ -38,7 +39,8 @@ public abstract class Shape implements Cloneable{
             throw new AssertionError("Cloning not supported");
         }
     }
-
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public double getX1() { return x1; }
     public double getY1() { return y1; }
     public double getX2() { return x2; }
