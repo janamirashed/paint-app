@@ -68,7 +68,11 @@ public class DrawingController {
         }
     }
 
-
+    @PostMapping("/duplicate/{id}")
+    public ResponseEntity<ShapeDTO> duplicateShapeEndpoint(@PathVariable String id) {
+        ShapeDTO duplicateDTO = service.duplicateShape(id);
+        return ResponseEntity.ok(duplicateDTO);
+    }
 
     //Get all shapes from the canvas
     @GetMapping("/all")
