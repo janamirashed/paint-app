@@ -1,5 +1,5 @@
 <div class="paint-app">
-  <app-header-toolbar (shapesImported)="loadShapes()"></app-header-toolbar>
+  <app-header-toolbar ></app-header-toolbar> <!-- (shapesImported)="loadShapes()" -->
 
   <div class="main-layout">
     <app-side-toolbar (toolSelected)="onToolChange($event)"></app-side-toolbar>
@@ -11,7 +11,7 @@
 
     <app-properties-panel
       (propertiesChanged)="onPropertiesChange($event)"
-      (clear)="clearCanvas()">
+      >
 
     </app-properties-panel>
   </div>
