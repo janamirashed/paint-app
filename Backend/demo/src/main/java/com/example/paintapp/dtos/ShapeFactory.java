@@ -25,6 +25,7 @@ public class ShapeFactory {
                 break;
 
             case "freehand":
+            case "path":
                 shape = new Freehand();
                 break;
 
@@ -54,6 +55,16 @@ public class ShapeFactory {
         shape.setY1(dto.getY1());
         shape.setX2(dto.getX2());
         shape.setY2(dto.getY2());
+
+        if (dto.getAngle() != null) {
+            shape.setAngle(dto.getAngle());
+        }
+        if (dto.getScaleX() != null) {
+            shape.setScaleX(dto.getScaleX());
+        }
+        if (dto.getScaleY() != null) {
+            shape.setScaleY(dto.getScaleY());
+        }
 
         // Set all extra properties (radius, width, height, etc.)
         if (dto.getProperties() != null) {

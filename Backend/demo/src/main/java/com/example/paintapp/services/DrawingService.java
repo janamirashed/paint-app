@@ -33,6 +33,11 @@ public class DrawingService {
         dto.setY1((int) shape.getY1());
         dto.setX2((int) shape.getX2());
         dto.setY2((int) shape.getY2());
+
+        dto.setAngle(shape.getAngle());
+        dto.setScaleX(shape.getScaleX());
+        dto.setScaleY(shape.getScaleY());
+
         dto.setProperties(shape.getProperties());
         return dto;
     }
