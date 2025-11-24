@@ -14,6 +14,7 @@ export class HeaderToolbar {
   @Output() deleteRequest = new EventEmitter<void>();
   @Output() undoRequest = new EventEmitter<void>();
   @Output() redoRequest = new EventEmitter<void>();
+  @Output() duplicateRequest = new EventEmitter<void>();
   @Input() canvasComponent?: Canvas;
 
   constructor(private httpService: HttpService) {}
@@ -25,7 +26,9 @@ export class HeaderToolbar {
   onUndoClick() {
     this.undoRequest.emit();
   }
-
+  duplicateSelected() {
+    this.duplicateRequest.emit();
+  }
   onRedoClick() {
     this.redoRequest.emit();
   }

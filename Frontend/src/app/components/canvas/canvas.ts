@@ -114,6 +114,23 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   }
 
+  duplicateSelected() {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+
+    this.http.post<ShapeDTO>(`http://localhost:8080/drawing/duplicate/${active.get('id')}`, {})
+      .subscribe({
+        next: (dto) => {
+          const newShape = this.createFabricObjectFromDTO(dto);
+          if (!newShape) return console.error('Failed to convert DTO to fabric object');
+          this.canvas.add(newShape);
+          this.canvas.setActiveObject(newShape);
+          this.canvas.requestRenderAll();
+        },
+        error: (err) => console.error('Duplication failed:', err)
+      });
+  }
+
 
   private saveStateToBackend() {
     // Don't save state during undo/redo operations
