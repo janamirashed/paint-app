@@ -86,6 +86,35 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.canvas.renderAll();
   }
 
+
+  deleteSelected() {
+    const objs = this.canvas.getActiveObjects();
+
+    if (!objs || objs.length === 0) return;
+    this.saveStateToBackend();
+
+    objs.forEach((obj: fabric.Object) => {
+      this.deleteShapeInBackend(obj);
+      this.canvas.remove(obj);
+    });
+
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
+  }
+
+  private deleteShapeInBackend(fabricObj: fabric.Object) {
+    const id = fabricObj.get('id');
+    if(!id) return;
+
+    this.http.delete(`${this.baseUrl}/drawing/delete/${id}`, { responseType: 'text' })
+      .subscribe({
+        next: () => console.log(`Shape deleted (ID: ${id})`),
+        error: err => console.error('Failed to delete:', err)
+      });
+
+  }
+
+
   private saveStateToBackend() {
     // Don't save state during undo/redo operations
     if (this.isUndoRedoOperation) return;
@@ -315,13 +344,6 @@ export class Canvas implements AfterViewInit, OnChanges {
 // convert ShapeDTO back to fabric objects
   private createFabricObjectFromDTO(dto: any): fabric.Object | null {
     const props = dto.properties || {};
-    // const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
-    // if (fabricObj) {
-    //   if (shapeDTO.id) {
-    //     fabricObj.set('id', shapeDTO.id);
-    //   }
-    //   this.canvas.add(fabricObj);
-    // }
     const commonProps = {
       stroke: props.strokeColor || '#000000',
       strokeWidth: props.strokeWidth || 2,

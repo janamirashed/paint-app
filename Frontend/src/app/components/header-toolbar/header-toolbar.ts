@@ -11,9 +11,24 @@ import { Canvas } from '../canvas/canvas';
 export class HeaderToolbar {
 
   @Output() shapesImported = new EventEmitter<void>();
+  @Output() deleteRequest = new EventEmitter<void>();
+  @Output() undoRequest = new EventEmitter<void>();
+  @Output() redoRequest = new EventEmitter<void>();
   @Input() canvasComponent?: Canvas;
 
   constructor(private httpService: HttpService) {}
+
+
+  deleteSelected() {
+    this.deleteRequest.emit();
+  }
+  onUndoClick() {
+    this.undoRequest.emit();
+  }
+
+  onRedoClick() {
+    this.redoRequest.emit();
+  }
 
   saveJSON() {
     if (!this.canvasComponent) {

@@ -4,10 +4,13 @@
   </div>
 
   <div class="actions">
-    <button class="btn btn-icon" title="Undo">
+    <button class="btn btn-danger" (click)="deleteSelected()" title="Delete Selected">
+      🗑 Delete
+    </button>
+    <button (click)="onUndoClick()" class="btn btn-icon" title="Undo">
       <span class="icon-undo">↶</span>
     </button>
-    <button class="btn btn-icon" title="Redo">
+    <button (click)="onRedoClick()" class="btn btn-icon" title="Redo">
       <span class="icon-redo">↷</span>
     </button>
     <button class="btn" (click)="loadFile()">
