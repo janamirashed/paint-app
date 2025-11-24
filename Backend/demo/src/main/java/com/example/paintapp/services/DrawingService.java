@@ -64,6 +64,31 @@ public class DrawingService {
         return false;
     }
 
+    public ShapeDTO duplicateShape(String shapeId) {
+        Shape original = shapes.get(shapeId);
+        if (original == null) {
+            throw new IllegalArgumentException("Shape not found: " + shapeId);
+        }
+
+        // Prototype design pattern
+        Shape clone = original.clone();
+        clone.setId(UUID.randomUUID().toString());
+        double offset = 20;
+        clone.setX1(clone.getX1() + offset);
+        clone.setY1(clone.getY1() + offset);
+        clone.setX2(clone.getX2() + offset);
+        clone.setY2(clone.getY2() + offset);
+
+        shapes.put(clone.getId(), clone);
+
+        saveState();
+        System.out.println("Shape duplicated: original=" + shapeId + ", clone=" + clone.getId());
+
+        return shapeToDTO(clone);
+    }
+
+
+
     public List<ShapeDTO> getAll() {
         return shapes.values().stream().map(this::shapeToDTO).toList();
     }
