@@ -11,7 +11,7 @@ import { DecimalPipe } from '@angular/common';
 })
 export class PropertiesPanel {
   @Output() propertiesChanged = new EventEmitter<{ [key: string]: any }>();
-
+  @Output() clear = new EventEmitter<void>();
   // UI Values
   strokeWidth = 5;
   strokeColor = '#000000';

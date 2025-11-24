@@ -1,22 +1,30 @@
-import { Component, ViewChild, ElementRef, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
-import { ShapeFactoryService } from '../../services/shape-factory';
-import { Shape } from '../../models/shape';
+import {
+  Component,
+  AfterViewInit,
+  ViewChild,
+  ElementRef,
+  Input,
+  OnChanges,
+  SimpleChanges
+} from '@angular/core';
+
+import * as fabric from 'fabric';
+import {HttpClient} from '@angular/common/http';
+import { FabricToDtoService } from '../../services/fabric-to-dto';
 
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [],
   templateUrl: './canvas.html',
-  styleUrls: ['./canvas.css'],
+  styleUrl: './canvas.css'
 })
-export class Canvas implements AfterViewInit {
+export class Canvas implements AfterViewInit, OnChanges {
+  @ViewChild('fabricCanvas', { static: true })
+  canvasElement!: ElementRef<HTMLCanvasElement>;
 
-  constructor(private shapeFactory: ShapeFactoryService) {}
+  @Input() activeTool: string = 'select';
 
-  @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
-  @Output() shapeSelected = new EventEmitter<Shape>();
-  @Input() activeTool: string = 'freehand';
-  @Input() currentProperties: { [key: string]: any } = {
+  @Input() currentProperties: any = {
     strokeWidth: 5,
     strokeColor: '#000000',
     fillColor: 'transparent',
@@ -24,219 +32,687 @@ export class Canvas implements AfterViewInit {
     lineStyle: 'solid'
   };
 
-  ctx!: CanvasRenderingContext2D;
-  drawing = false;
+  canvas!: fabric.Canvas;
 
-  currentShape: Shape | null = null;
-  shapeRegister: Shape[] = [];
-
-  canvasWidth = 800;
-  canvasHeight = 500;
   startX = 0;
   startY = 0;
 
-  ngAfterViewInit(): void {
-    const canvas = this.canvasRef.nativeElement;
-    this.ctx = canvas.getContext('2d')!;
+  drawingObject: fabric.Object | null = null;
+  isDrawing = false;
 
-    this.ctx.lineWidth = 2;
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-    this.ctx.strokeStyle = 'black';
+  private baseUrl = 'http://localhost:8080';
+
+  constructor(
+    private http: HttpClient,
+    private fabricToDtoService: FabricToDtoService
+  ) {}
+  private isUndoRedoOperation = false;
+
+  undo() {
+    this.http.post<any[]>(`${this.baseUrl}/drawing/undo`, {}).subscribe({
+      next: (shapes) => {
+        this.isUndoRedoOperation = true;
+        this.reloadCanvas(shapes);
+        this.isUndoRedoOperation = false;
+      },
+      error: (err) => console.error('Undo failed:', err)
+    });
+  }
+  redo() {
+    this.http.post<any[]>(`${this.baseUrl}/drawing/redo`, {}).subscribe({
+      next: (shapes) => {
+        this.isUndoRedoOperation = true;
+        this.reloadCanvas(shapes);
+        this.isUndoRedoOperation = false;
+      },
+      error: (err) => console.error('Redo failed:', err)
+    });
   }
 
-  onPropertiesChanged(newProps: any) {
-    this.currentProperties = { ...newProps };
-    console.log('Properties updated in canvas:', this.currentProperties);
-  }
-
-  onMouseDown(event: MouseEvent) {
-    this.drawing = true;
-    this.startX = event.offsetX;
-    this.startY = event.offsetY;
-
-    // Create shape using injected service
-    this.currentShape = this.shapeFactory.createShape(
-      this.activeTool,
-      this.startX,
-      this.startY,
-      this.startX,
-      this.startY,
-      { ...this.currentProperties }
-    );
-
-    if (this.activeTool === 'freehand') {
-
-      if (!this.currentShape.properties['points']) {
-        this.currentShape.properties['points'] = [];
-      }
-
-      this.currentShape.properties['points'].push({ x: this.startX, y: this.startY });
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.startX, this.startY);
-    }
-  }
-
-  onMouseUp(event: MouseEvent) {
-    if (!this.drawing) return;
-    this.drawing = false;
-
-    const x = event.offsetX;
-    const y = event.offsetY;
-
-    if (this.currentShape) {
-      this.currentShape.x2 = x;
-      this.currentShape.y2 = y;
-
-      this.shapeRegister.push(this.currentShape);
-      this.shapeSelected.emit(this.currentShape);
-      this.currentShape = null;
-
-      this.redrawAllShapes();
-    }
-  }
-
-  onMouseMove(event: MouseEvent) {
-    if (!this.drawing) return;
-    const x = event.offsetX;
-    const y = event.offsetY;
-
-    if (!this.currentShape) return;
-
-    if (this.activeTool === 'freehand') {
-
-      if (!this.currentShape.properties['points']) {
-        this.currentShape.properties['points'] = [];
-      }
-
-      this.currentShape.properties['points'].push({ x, y });
-
-      this.ctx.lineTo(x, y);
-      this.applyDrawingStyle(this.currentShape);
-      this.ctx.stroke();
-
-    } else {
-      this.currentShape.x2 = x;
-      this.currentShape.y2 = y;
-
-      this.redrawAllShapes();
-      this.drawShape(this.currentShape);
-    }
-  }
-
-  applyDrawingStyle(shape: Shape) {
-    const props = shape.properties || {};
-    this.ctx.lineWidth = props['strokeWidth'] ?? 1;
-    this.ctx.strokeStyle = props['strokeColor'] ?? '#000';
-    this.ctx.fillStyle = props['fillColor'] ?? 'transparent';
-    this.ctx.globalAlpha = props['opacity'] ?? 1;
-
-    if (props['lineStyle'] === 'dashed') {
-      this.ctx.setLineDash([10, 5]);
-    } else {
-      this.ctx.setLineDash([]);
-    }
-  }
-
-  drawShape(shape: Shape) {
-    const { type, x1, y1, x2, y2, properties } = shape;
-    const width = Math.abs(x2 - x1);
-    const height = Math.abs(y2 - y1);
-
-    this.ctx.beginPath();
-    this.applyDrawingStyle(shape);
-
-    const drawX = x2 >= x1 ? x1 : x1 - width;
-    const drawY = y2 >= y1 ? y1 : y1 - height;
-
-    switch (type) {
-      case 'square': {
-        const side = Math.min(width, height);
-        const sx = x2 >= x1 ? x1 : x1 - side;
-        const sy = y2 >= y1 ? y1 : y1 - side;
-        if (this.ctx.fillStyle !== 'transparent') this.ctx.fillRect(sx, sy, side, side);
-        this.ctx.strokeRect(sx, sy, side, side);
-        break;
-      }
-
-      case 'rectangle':
-        if (this.ctx.fillStyle !== 'transparent') this.ctx.fillRect(drawX, drawY, width, height);
-        this.ctx.strokeRect(drawX, drawY, width, height);
-        break;
-
-      case 'circle': {
-        const radius = properties['radius'] ?? Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-        this.ctx.beginPath();
-        this.ctx.arc(x1, y1, radius, 0, Math.PI * 2);
-        if (this.ctx.fillStyle !== 'transparent') this.ctx.fill();
-        this.ctx.stroke();
-        break;
-      }
-
-      case 'ellipse': {
-        const radiusX = width / 2;
-        const radiusY = height / 2;
-        const centerX = drawX + radiusX;
-        const centerY = drawY + radiusY;
-        this.ctx.beginPath();
-        if (typeof this.ctx.ellipse === 'function') {
-          this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-          if (this.ctx.fillStyle !== 'transparent') this.ctx.fill();
-          this.ctx.stroke();
+  private reloadCanvas(shapes: any[]) {
+    this.canvas.clear();
+    shapes.forEach(shapeDTO => {
+      try {
+        const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
+        if (fabricObj) {
+          this.canvas.add(fabricObj);
         }
-        break;
+      } catch (error) {
+        console.error('Error creating shape from DTO:', error, shapeDTO);
       }
+    });
+    this.canvas.renderAll();
+  }
+
+  private saveStateToBackend() {
+    if (this.isUndoRedoOperation) return; // Don't save state during undo/redo
+
+    this.http.post(`${this.baseUrl}/drawing/save-state`, {}).subscribe({
+      next: () => console.log('State saved'),
+      error: (err) => console.error('Failed to save state:', err)
+    });
+  }
+
+  ngAfterViewInit() {
+    this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
+      selection: true
+    });
+    this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+
+    this.attachFabricEvents();
+    this.handleToolChange();
+    this.loadShapesFromBackend();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (!this.canvas) return;
+
+    // Handle tool changes - check both if it changed AND if it exists (for initial load)
+    if (changes['activeTool']) {
+      this.handleToolChange();
+    }
+
+    // Handle property changes for selected objects
+    if (changes['currentProperties']) {
+      this.applyPropertiesToSelectedObject();
+
+      // Also update brush properties if in drawing mode
+      if (this.canvas.isDrawingMode && this.canvas.freeDrawingBrush) {
+        this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
+        this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
+      }
+    }
+  }
+
+  // ========================= EVENTS =========================
+
+  attachFabricEvents() {
+    this.canvas.on('mouse:down', (e) => this.handleMouseDown(e));
+    this.canvas.on('mouse:move', (e) => this.handleMouseMove(e));
+    this.canvas.on('mouse:up', () => this.handleMouseUp());
+
+    // Listen for when free drawing path is created
+    this.canvas.on('path:created', (e: any) => {
+      if (e.path) {
+        this.saveShapeToBackend(e.path);
+      }
+    });
+
+    // Track object modifications (move, scale, rotate)
+    this.canvas.on('object:modified', (e: any) => {
+      if (e.target && !this.isUndoRedoOperation) {
+        this.saveStateToBackend();
+        // Update the modified object in backend
+        this.updateShapeInBackend(e.target);
+      }
+    });
+    // Track selection changes for property updates
+    this.canvas.on('selection:created', () => {
+      // save state on select ( before user modifies )
+      this.saveStateToBackend();
+    });
+  }
+
+  private updateShapeInBackend(fabricObj: fabric.Object) {
+    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
+    if (!shapeDTO) {
+      console.error('Failed to convert fabric object to DTO');
+      return;
+    }
+    this.saveShapeToBackend(fabricObj);
+
+  }
+
+
+
+
+
+  // ========================= TOOL MANAGEMENT =========================
+
+  handleToolChange() {
+    // Deselect any active objects when switching tools
+    this.canvas.discardActiveObject();
+    this.canvas.renderAll();
+
+    // Reset drawing mode and selection based on active tool
+    if (this.activeTool === 'select') {
+      this.canvas.isDrawingMode = false;
+      this.canvas.selection = true;
+      this.canvas.defaultCursor = 'default';
+    } else if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
+      this.canvas.selection = false;
+      this.canvas.defaultCursor = 'crosshair';
+      this.canvas.isDrawingMode = true;
+
+      // Configure brush - make sure it exists
+      if (this.canvas.freeDrawingBrush) {
+        this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
+        this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
+      }
+    } else {
+      // For shape tools (rectangle, ellipse, line, square, circle, triangle)
+      this.canvas.isDrawingMode = false;
+      this.canvas.selection = false;
+      this.canvas.defaultCursor = 'crosshair';
+    }
+  }
+
+  // ========================= LOGIC ==========================
+
+  handleMouseDown(e: fabric.TEvent) {
+    // For freehand/pencil, let fabric handle it
+    if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
+      this.saveStateToBackend();
+      return;
+    }
+
+    const pointer = this.canvas.getPointer(e.e);
+    this.startX = pointer.x;
+    this.startY = pointer.y;
+    this.isDrawing = true;
+
+    // Disable selection while drawing any shape
+    if (this.activeTool !== 'select') {
+      this.canvas.selection = false;
+      this.canvas.discardActiveObject();
+      this.canvas.renderAll();
+
+      this.saveStateToBackend();
+    }
+
+    if (this.activeTool === 'rectangle') this.startRectangle();
+    else if (this.activeTool === 'ellipse') this.startEllipse();
+    else if (this.activeTool === 'line') this.startLine(pointer);
+    else if (this.activeTool === 'square') this.startSquare();
+    else if (this.activeTool === 'circle') this.startCircle();
+    else if (this.activeTool === 'triangle') this.startTriangle();
+    else if (this.activeTool === 'select') {
+      // Ensure we're not in drawing mode for select tool
+      this.canvas.isDrawingMode = false;
+      this.canvas.selection = true;
+    }
+  }
+
+  handleMouseMove(e: fabric.TEvent) {
+    if (!this.isDrawing || !this.drawingObject) return;
+
+    const pointer = this.canvas.getPointer(e.e);
+
+    if (this.activeTool === 'rectangle') this.resizeRectangle(pointer);
+    else if (this.activeTool === 'ellipse') this.resizeEllipse(pointer);
+    else if (this.activeTool === 'line') this.resizeLine(pointer);
+    else if (this.activeTool === 'square') this.resizeSquare(pointer);
+    else if (this.activeTool === 'circle') this.resizeCircle(pointer);
+    else if (this.activeTool === 'triangle') this.resizeTriangle(pointer);
+  }
+
+  handleMouseUp() {
+    // Make the drawn object selectable and evented after it's finished
+    if (this.drawingObject) {
+      this.drawingObject.set({
+        selectable: true,
+        evented: true
+      });
+
+      // Save the shape to backend
+      this.saveShapeToBackend(this.drawingObject);
+    }
+
+    this.drawingObject = null;
+    this.isDrawing = false;
+  }
+
+  // ================= SAVE/LOAD FABRIC JSON ==================
+
+  private saveShapeToBackend(fabricObj: fabric.Object) {
+    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
+
+    if (!shapeDTO) {
+      console.error('Failed to convert fabric object to DTO');
+      return;
+    }
+
+    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO).subscribe({
+      next: () => console.log('Shape saved to backend via Factory'),
+      error: (err) => console.error('Failed to save shape:', err)
+    });
+  }
+
+  loadShapesFromBackend() {
+    this.http.get<any[]>(`${this.baseUrl}/drawing/all`).subscribe({
+      next: (shapes) => {
+        console.log('Loaded shapes from backend:', shapes);
+        this.canvas.clear();
+
+        shapes.forEach(shapeDTO => {
+          try {
+            // Convert ShapeDTO to Fabric.js object
+            const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
+            if (fabricObj) {
+              this.canvas.add(fabricObj);
+            }
+          } catch (error) {
+            console.error('Error creating shape from DTO:', error, shapeDTO);
+          }
+        });
+
+        this.canvas.renderAll();
+      },
+      error: (err) => console.error('Error loading shapes:', err)
+    });
+  }
+
+// convert ShapeDTO back to Fabric.js objects
+  private createFabricObjectFromDTO(dto: any): fabric.Object | null {
+    const props = dto.properties || {};
+
+    const commonProps = {
+      stroke: props.strokeColor || '#000000',
+      strokeWidth: props.strokeWidth || 2,
+      fill: props.fillColor || 'transparent',
+      opacity: props.opacity || 1,
+      angle: dto.angle || 0,
+      scaleX: dto.scaleX || 1,
+      scaleY: dto.scaleY || 1,
+      selectable: true,
+      evented: true
+    };
+
+    let obj: fabric.Object | null = null;
+
+    switch(dto.type.toLowerCase()) {
+      case 'rectangle':
+      case 'square':
+        const width = Math.abs(dto.x2 - dto.x1);
+        const height = Math.abs(dto.y2 - dto.y1);
+        obj = new fabric.Rect({
+          left: Math.min(dto.x1, dto.x2),
+          top: Math.min(dto.y1, dto.y2),
+          width: props.width || width,
+          height: props.height || height,
+          ...commonProps
+        });
+        break;
+
+      case 'circle':
+        const radius = props.radius || Math.abs(dto.x2 - dto.x1) / 2;
+        obj = new fabric.Circle({
+          left: dto.x1,
+          top: dto.y1,
+          radius: radius,
+          originX: 'center',
+          originY: 'center',
+          ...commonProps
+        });
+        break;
+
+      case 'ellipse':
+        obj = new fabric.Ellipse({
+          left: dto.x1,
+          top: dto.y1,
+          rx: props.rx || Math.abs(dto.x2 - dto.x1) / 2,
+          ry: props.ry || Math.abs(dto.y2 - dto.y1) / 2,
+          originX: 'center',
+          originY: 'center',
+          ...commonProps
+        });
+        break;
 
       case 'line':
-        this.ctx.beginPath();
-        this.ctx.moveTo(x1, y1);
-        this.ctx.lineTo(x2, y2);
-        this.ctx.stroke();
+        obj = new fabric.Line(
+          [dto.x1, dto.y1, dto.x2, dto.y2],
+          {
+            ...commonProps,
+            fill: undefined
+          }
+        );
         break;
 
       case 'triangle':
-        this.ctx.beginPath();
-        this.ctx.moveTo(x1, y1);
-        this.ctx.lineTo(x2, y1);
-        this.ctx.lineTo(drawX, y2);
-        this.ctx.closePath();
-        if (this.ctx.fillStyle !== 'transparent') this.ctx.fill();
-        this.ctx.stroke();
+        const triWidth = Math.abs(dto.x2 - dto.x1);
+        const triHeight = Math.abs(dto.y2 - dto.y1);
+        obj = new fabric.Triangle({
+          left: Math.min(dto.x1, dto.x2),
+          top: Math.min(dto.y1, dto.y2),
+          width: triWidth,
+          height: triHeight,
+          ...commonProps
+        });
         break;
 
-      case 'freehand': {
-        const points = properties?.['points'] || [];
-        if (points.length === 0) return;
-        this.ctx.beginPath();
-        this.ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) {
-          this.ctx.lineTo(points[i].x, points[i].y);
+      case 'freehand':
+      case 'path':
+        if (props.path) {
+          try {
+            let pathString = '';
+
+            // Handle both string format and array format
+            if (typeof props.path === 'string') {
+              pathString = props.path;
+            } else if (Array.isArray(props.path)) {
+              // Convert array format to string
+              pathString = props.path.join(' ');
+            }
+
+            if (pathString) {
+              obj = new fabric.Path(pathString, {
+                ...commonProps,
+                fill: undefined
+              });
+            }
+          } catch (error) {
+            console.error('Error creating path from DTO:', error, props.path);
+          }
         }
-        this.ctx.stroke();
-        break;
-      }
-
-      default:
-        console.warn('Unknown shape type:', type);
         break;
     }
 
-    this.ctx.globalAlpha = 1;
-    this.ctx.setLineDash([]);
+    return obj;
   }
-
-  redrawAllShapes() {
-    this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-    for (const s of this.shapeRegister) {
-      this.drawShape(s);
+  // Load entire canvas from JSON (for file import)
+  loadCanvasFromJSON(jsonString: string) {
+    try {
+      this.canvas.loadFromJSON(jsonString, () => {
+        this.canvas.renderAll();
+        console.log('Canvas loaded from JSON');
+      });
+    } catch (error) {
+      console.error('Error loading canvas from JSON:', error);
     }
   }
 
+  // Get entire canvas as JSON (for file export)
+  getCanvasAsJSON(): string {
+    return JSON.stringify(this.canvas.toJSON());
+  }
+
+  // Clear canvas and backend
   clearCanvas() {
-    this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-    this.shapeRegister = [];
-    this.currentShape = null;
-    this.drawing = false;
+    this.saveStateToBackend();
+    this.canvas.clear();
+    this.http.delete(`${this.baseUrl}/drawing/clear`).subscribe({
+      next: () => console.log('Canvas cleared'),
+      error: (err) => console.error('Error clearing canvas:', err)
+    });
   }
+
+  // ================= RECTANGLE ==================
+
+  startRectangle() {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    this.drawingObject = new fabric.Rect({
+      left: this.startX,
+      top: this.startY,
+      width: 1,
+      height: 1,
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      fill: this.currentProperties.fillColor,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeRectangle(pointer: fabric.Point) {
+    const rect = this.drawingObject as fabric.Rect;
+
+    rect.set({
+      width: Math.abs(pointer.x - this.startX),
+      height: Math.abs(pointer.y - this.startY),
+      left: Math.min(this.startX, pointer.x),
+      top: Math.min(this.startY, pointer.y)
+    });
+
+    this.canvas.renderAll();
+  }
+
+  // ================= ELLIPSE ==================
+
+  startEllipse() {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    this.drawingObject = new fabric.Ellipse({
+      left: this.startX,
+      top: this.startY,
+      rx: 1,
+      ry: 1,
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      fill: this.currentProperties.fillColor,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeEllipse(pointer: fabric.Point) {
+    const ellipse = this.drawingObject as fabric.Ellipse;
+
+    ellipse.set({
+      rx: Math.abs(pointer.x - this.startX) / 2,
+      ry: Math.abs(pointer.y - this.startY) / 2,
+      left: Math.min(this.startX, pointer.x) + Math.abs(pointer.x - this.startX) / 2,
+      top: Math.min(this.startY, pointer.y) + Math.abs(pointer.y - this.startY) / 2,
+      originX: 'center',
+      originY: 'center'
+    });
+
+    this.canvas.renderAll();
+  }
+
+  // ================= LINE ==================
+
+  startLine(pointer: fabric.Point) {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    const points: [number, number, number, number] = [
+      this.startX,
+      this.startY,
+      pointer.x,
+      pointer.y
+    ];
+
+    this.drawingObject = new fabric.Line(points, {
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeLine(pointer: fabric.Point) {
+    const line = this.drawingObject as fabric.Line;
+
+    line.set({ x2: pointer.x, y2: pointer.y });
+    this.canvas.renderAll();
+  }
+
+  // ================= SQUARE ==================
+
+  startSquare() {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    this.drawingObject = new fabric.Rect({
+      left: this.startX,
+      top: this.startY,
+      width: 1,
+      height: 1,
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      fill: this.currentProperties.fillColor,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeSquare(pointer: fabric.Point) {
+    const square = this.drawingObject as fabric.Rect;
+
+    // Calculate size based on the larger dimension to create a square
+    const deltaX = Math.abs(pointer.x - this.startX);
+    const deltaY = Math.abs(pointer.y - this.startY);
+    const size = Math.max(deltaX, deltaY);
+
+    // Determine direction for positioning
+    const dirX = pointer.x >= this.startX ? 1 : -1;
+    const dirY = pointer.y >= this.startY ? 1 : -1;
+
+    square.set({
+      width: size,
+      height: size,
+      left: dirX === 1 ? this.startX : this.startX - size,
+      top: dirY === 1 ? this.startY : this.startY - size
+    });
+
+    this.canvas.renderAll();
+  }
+
+  // ================= CIRCLE ==================
+
+  startCircle() {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    this.drawingObject = new fabric.Circle({
+      left: this.startX,
+      top: this.startY,
+      radius: 1,
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      fill: this.currentProperties.fillColor,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center'
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeCircle(pointer: fabric.Point) {
+    const circle = this.drawingObject as fabric.Circle;
+
+    // Calculate radius based on the distance from start point
+    const deltaX = Math.abs(pointer.x - this.startX);
+    const deltaY = Math.abs(pointer.y - this.startY);
+    const radius = Math.max(deltaX, deltaY) / 2;
+
+    // Center the circle between start and current pointer
+    const centerX = (this.startX + pointer.x) / 2;
+    const centerY = (this.startY + pointer.y) / 2;
+
+    circle.set({
+      radius: radius,
+      left: centerX,
+      top: centerY
+    });
+
+    this.canvas.renderAll();
+  }
+
+  // ================= TRIANGLE ==================
+
+  startTriangle() {
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+
+    this.drawingObject = new fabric.Triangle({
+      left: this.startX,
+      top: this.startY,
+      width: 1,
+      height: 1,
+      stroke: this.currentProperties.strokeColor,
+      strokeWidth: this.currentProperties.strokeWidth,
+      fill: this.currentProperties.fillColor,
+      opacity: this.currentProperties.opacity,
+      selectable: false,
+      evented: false
+    });
+
+    this.canvas.add(this.drawingObject);
+  }
+
+  resizeTriangle(pointer: fabric.Point) {
+    const triangle = this.drawingObject as fabric.Triangle;
+
+    const width = Math.abs(pointer.x - this.startX);
+    const height = Math.abs(pointer.y - this.startY);
+
+    triangle.set({
+      width: width,
+      height: height,
+      left: Math.min(this.startX, pointer.x),
+      top: Math.min(this.startY, pointer.y)
+    });
+
+    this.canvas.renderAll();
+  }
+
+  // ================= PENCIL ==================
+
+  /* enableFreeDrawing() {
+    this.canvas.isDrawingMode = true;
+    this.canvas.selection = false;
+    this.canvas.discardActiveObject();
+
+    if (this.canvas.freeDrawingBrush) {
+      this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
+      this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
+    }
+  } */
+
+  // ================= PROPERTIES ==================
+
+  applyPropertiesToSelectedObject() {
+    const activeObject = this.canvas.getActiveObject();
+    if (!activeObject) return;
+
+    if (!this.isUndoRedoOperation) {
+      this.saveStateToBackend();
+    }
+
+    const updates: any = {};
+
+    // Apply stroke width
+    if (this.currentProperties.strokeWidth !== undefined) {
+      updates.strokeWidth = this.currentProperties.strokeWidth;
+    }
+
+    // Apply stroke color
+    if (this.currentProperties.strokeColor !== undefined) {
+      updates.stroke = this.currentProperties.strokeColor;
+    }
+
+    // Apply fill color (only if the object supports fill)
+    if (this.currentProperties.fillColor !== undefined && activeObject.type !== 'line') {
+      updates.fill = this.currentProperties.fillColor;
+    }
+
+    // Apply opacity
+    if (this.currentProperties.opacity !== undefined) {
+      updates.opacity = this.currentProperties.opacity;
+    }
+
+    activeObject.set(updates);
+    this.canvas.renderAll();
+    this.updateShapeInBackend(activeObject);
+  }
+
 }

@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/import")
-@CrossOrigin(origins = "*")
+
 public class ImportController {
 
     @Autowired

@@ -1,17 +1,19 @@
-import { Component, signal, ViewChild } from '@angular/core';
+import { Component, signal, ViewChild, OnInit, AfterViewInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { PropertiesPanel } from './components/properties-panel/properties-panel';
 import { Canvas } from './components/canvas/canvas';
 import { HeaderToolbar } from './components/header-toolbar/header-toolbar';
 import { SideToolbar } from './components/side-toolbar/side-toolbar';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [PropertiesPanel, Canvas, HeaderToolbar, SideToolbar],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
+export class App /* implements OnInit, AfterViewInit */ {
   @ViewChild(Canvas) canvas!: Canvas;
 
   protected readonly title = signal('Frontend');
@@ -24,11 +26,12 @@ export class App {
     lineStyle: 'solid'
   };
 
-  clearCanvas() {
-    if (this.canvas) {
-      this.canvas.clearCanvas();
-    }
+  constructor(private http: HttpClient) {}
+
+  ngAfterViewInit() {
+    console.log('Canvas initialized:', this.canvas);
   }
+
 
   onToolChange(tool: string) {
     this.currentTool = tool;
@@ -36,8 +39,11 @@ export class App {
 
   onPropertiesChange(properties: { [key: string]: any }) {
     this.currentProperties = { ...properties };
+  }
+
+  onClearCanvas() {
     if (this.canvas) {
-      this.canvas.onPropertiesChanged(this.currentProperties);
+      this.canvas.clearCanvas();
     }
   }
 }
