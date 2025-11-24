@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import * as fabric from 'fabric';
+import {HttpClient} from '@angular/common/http';
 
 @Component({
   selector: 'app-canvas',
@@ -34,9 +35,13 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   startX = 0;
   startY = 0;
-  
+
   drawingObject: fabric.Object | null = null;
   isDrawing = false;
+
+  private baseUrl = 'http://localhost:8080';
+
+  constructor(private http: HttpClient) {}
 
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
@@ -47,9 +52,12 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
 
     this.attachFabricEvents();
-    
+
     // Apply initial tool state
     this.handleToolChange();
+
+    // Load existing shapes from backend
+    this.loadShapesFromBackend();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -63,7 +71,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     // Handle property changes for selected objects
     if (changes['currentProperties']) {
       this.applyPropertiesToSelectedObject();
-      
+
       // Also update brush properties if in drawing mode
       if (this.canvas.isDrawingMode && this.canvas.freeDrawingBrush) {
         this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
@@ -78,6 +86,13 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.canvas.on('mouse:down', (e) => this.handleMouseDown(e));
     this.canvas.on('mouse:move', (e) => this.handleMouseMove(e));
     this.canvas.on('mouse:up', () => this.handleMouseUp());
+
+    // Listen for when free drawing path is created
+    this.canvas.on('path:created', (e: any) => {
+      if (e.path) {
+        this.saveShapeToBackend(e.path);
+      }
+    });
   }
 
   // ========================= TOOL MANAGEMENT =========================
@@ -86,7 +101,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     // Deselect any active objects when switching tools
     this.canvas.discardActiveObject();
     this.canvas.renderAll();
-    
+
     // Reset drawing mode and selection based on active tool
     if (this.activeTool === 'select') {
       this.canvas.isDrawingMode = false;
@@ -96,7 +111,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       this.canvas.selection = false;
       this.canvas.defaultCursor = 'crosshair';
       this.canvas.isDrawingMode = true;
-      
+
       // Configure brush - make sure it exists
       if (this.canvas.freeDrawingBrush) {
         this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
@@ -117,7 +132,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
       return;
     }
-    
+
     const pointer = this.canvas.getPointer(e.e);
     this.startX = pointer.x;
     this.startY = pointer.y;
@@ -159,14 +174,107 @@ export class Canvas implements AfterViewInit, OnChanges {
   handleMouseUp() {
     // Make the drawn object selectable and evented after it's finished
     if (this.drawingObject) {
-      this.drawingObject.set({ 
+      this.drawingObject.set({
         selectable: true,
-        evented: true 
+        evented: true
       });
+
+      // Save the shape to backend
+      this.saveShapeToBackend(this.drawingObject);
     }
-    
+
     this.drawingObject = null;
     this.isDrawing = false;
+  }
+
+  // ================= SAVE/LOAD FABRIC JSON ==================
+
+  private saveShapeToBackend(fabricObj: fabric.Object) {
+    const fabricJson = JSON.stringify(fabricObj.toJSON());
+
+    this.http.post(`${this.baseUrl}/drawing/add`, { fabricJson }).subscribe({
+      next: () => console.log('Shape saved to backend'),
+      error: (err) => console.error('Failed to save shape:', err)
+    });
+  }
+
+  loadShapesFromBackend() {
+    this.http.get<any[]>(`${this.baseUrl}/drawing/all`).subscribe({
+      next: (shapes) => {
+        console.log('Loaded shapes from backend:', shapes);
+        this.canvas.clear();
+
+        shapes.forEach(shapeDTO => {
+          try {
+            const fabricData = JSON.parse(shapeDTO.fabricJson);
+
+            // Create fabric object based on its type
+            this.createObjectFromData(fabricData);
+
+          } catch (error) {
+            console.error('Error parsing shape:', error);
+          }
+        });
+
+        this.canvas.renderAll();
+      },
+      error: (err) => console.error('Error loading shapes:', err)
+    });
+  }
+
+  private createObjectFromData(data: any) {
+    let obj: fabric.Object | null = null;
+
+    switch(data.type) {
+      case 'rect':
+        obj = new fabric.Rect(data);
+        break;
+      case 'circle':
+        obj = new fabric.Circle(data);
+        break;
+      case 'ellipse':
+        obj = new fabric.Ellipse(data);
+        break;
+      case 'line':
+        obj = new fabric.Line([data.x1, data.y1, data.x2, data.y2], data);
+        break;
+      case 'triangle':
+        obj = new fabric.Triangle(data);
+        break;
+      case 'path':
+        obj = new fabric.Path(data.path, data);
+        break;
+    }
+
+    if (obj) {
+      this.canvas.add(obj);
+    }
+  }
+
+  // Load entire canvas from JSON (for file import)
+  loadCanvasFromJSON(jsonString: string) {
+    try {
+      this.canvas.loadFromJSON(jsonString, () => {
+        this.canvas.renderAll();
+        console.log('Canvas loaded from JSON');
+      });
+    } catch (error) {
+      console.error('Error loading canvas from JSON:', error);
+    }
+  }
+
+  // Get entire canvas as JSON (for file export)
+  getCanvasAsJSON(): string {
+    return JSON.stringify(this.canvas.toJSON());
+  }
+
+  // Clear canvas and backend
+  clearCanvas() {
+    this.canvas.clear();
+    this.http.delete(`${this.baseUrl}/drawing/clear`).subscribe({
+      next: () => console.log('Canvas cleared'),
+      error: (err) => console.error('Error clearing canvas:', err)
+    });
   }
 
   // ================= RECTANGLE ==================
@@ -400,7 +508,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   // ================= PENCIL ==================
 
-  enableFreeDrawing() {
+  /* enableFreeDrawing() {
     this.canvas.isDrawingMode = true;
     this.canvas.selection = false;
     this.canvas.discardActiveObject();
@@ -409,7 +517,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
       this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
     }
-  }
+  } */
 
   // ================= PROPERTIES ==================
 

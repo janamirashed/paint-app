@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Output} from '@angular/core';
+import { Component, EventEmitter, Output, Input } from '@angular/core';
 import { HttpService } from '../../services/http.service';
+import { Canvas } from '../canvas/canvas';
 
 @Component({
   selector: 'app-header-toolbar',
@@ -10,19 +11,20 @@ import { HttpService } from '../../services/http.service';
 export class HeaderToolbar {
 
   @Output() shapesImported = new EventEmitter<void>();
+  @Input() canvasComponent!: Canvas;
 
   constructor(private httpService: HttpService) {}
 
   saveJSON() {
-    this.httpService.exportJSON().subscribe({
-      next: (blob) => {
-        this.downloadFile(blob, 'drawing.json');
-      },
-      error: (err) => {
-        console.error('Error exporting JSON:', err);
-        alert('Failed to export JSON');
-      }
-    });
+    if (!this.canvasComponent) {
+      alert('Canvas not ready');
+      return;
+    }
+
+    // get entire canvas as JSON
+    const canvasJson = this.canvasComponent.getCanvasAsJSON();
+    const blob = new Blob([canvasJson], { type: 'application/json' });
+    this.downloadFile(blob, 'drawing.json');
   }
 
   saveXML() {
@@ -71,16 +73,22 @@ export class HeaderToolbar {
   }
 
   private importJSON(content: string) {
-    this.httpService.importJSON(content).subscribe({
-      next: (message) => {
+    try {
+      JSON.parse(content);
+
+      if (this.canvasComponent) {
+        this.canvasComponent.loadCanvasFromJSON(content);
         alert('Imported successfully!');
-        this.shapesImported.emit();
-      },
-      error: (err) => {
-        console.error('Error importing JSON:', err);
-        alert('Failed to import');
+
+        this.httpService.importJSON(content).subscribe({
+          next: () => console.log('Synced with backend'),
+          error: (err) => console.error('Backend sync failed:', err)
+        });
       }
-    });
+    } catch (error) {
+      console.error('Invalid JSON:', error);
+      alert('Failed to import: Invalid JSON file');
+    }
   }
 
   private importXML(content: string) {
@@ -88,6 +96,10 @@ export class HeaderToolbar {
       next: (message) => {
         alert('Imported successfully!');
         this.shapesImported.emit();
+
+        if (this.canvasComponent) {
+          this.canvasComponent.loadShapesFromBackend();
+        }
       },
       error: (err) => {
         console.error('Error importing XML:', err);

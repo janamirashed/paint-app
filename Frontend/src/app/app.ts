@@ -25,49 +25,19 @@ export class App /* implements OnInit, AfterViewInit */ {
     lineStyle: 'solid'
   };
 
-
-
   constructor(private http: HttpClient) {}
-
-  // ADD THIS METHOD
-  ngOnInit() {
-  }
-
-  /* ngAfterViewInit() {
-    this.loadShapes();
-  } */
-
-  /* loadShapes() {
-    this.http.get<any[]>('http://localhost:8080/drawing/all').subscribe({
-      next: (shapes) => {
-        console.log('Loaded shapes:', shapes);
-        setTimeout(() => {
-          if (this.canvas) {
-            // Clear canvas first, then load new shapes
-            this.canvas.clearCanvas();
-            if (shapes.length > 0) {
-              this.canvas.loadShapes(shapes);
-            }
-          }
-        }, 100);
-      },
-      error: (err) => {
-        console.error('Error loading shapes:', err);
-      }
-    });
-  } */
 
   onToolChange(tool: string) {
     this.currentTool = tool;
   }
 
-  // onPropertiesChange(properties: { [key: string]: any }) {
-  //   this.currentProperties = { ...properties };
-  //   if (this.canvas) {
-  //     this.canvas.onPropertiesChanged(this.currentProperties);
-  //   }
-  // }
   onPropertiesChange(properties: { [key: string]: any }) {
     this.currentProperties = { ...properties };
+  }
+
+  onClearCanvas() {
+    if (this.canvas) {
+      this.canvas.clearCanvas();
+    }
   }
 }
