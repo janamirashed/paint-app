@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ExportService {
@@ -18,9 +17,7 @@ public class ExportService {
 
         CanvasWrapper wrapper = new CanvasWrapper();
         wrapper.version = "5.3.0";
-        wrapper.objects = shapes.stream()
-                .map(ShapeDTO::getFabricJson)
-                .collect(Collectors.toList());
+        wrapper.objects = shapes;
 
         return mapper.writeValueAsString(wrapper);
     }
@@ -42,9 +39,8 @@ public class ExportService {
         public List<ShapeDTO> shapes;
     }
 
-    // wrapper for canvas JSON structure
     public static class CanvasWrapper {
         public String version;
-        public List<String> objects;
+        public List<ShapeDTO> objects;  // Changed type
     }
 }

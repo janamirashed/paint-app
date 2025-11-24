@@ -22,20 +22,20 @@ public class ImportService {
             JsonNode objectsNode = rootNode.get("objects");
             if (objectsNode.isArray()) {
                 for (JsonNode objectNode : objectsNode) {
-                    String fabricJson = mapper.writeValueAsString(objectNode);
-                    shapeDTOs.add(new ShapeDTO(fabricJson));
+                    ShapeDTO dto = mapper.treeToValue(objectNode, ShapeDTO.class);
+                    shapeDTOs.add(dto);
                 }
             }
         } else if (rootNode.isArray()) {
             // Direct array of shape objects
             for (JsonNode objectNode : rootNode) {
-                String fabricJson = mapper.writeValueAsString(objectNode);
-                shapeDTOs.add(new ShapeDTO(fabricJson));
+                ShapeDTO dto = mapper.treeToValue(objectNode, ShapeDTO.class);
+                shapeDTOs.add(dto);
             }
         } else {
             // Single object
-            String fabricJson = mapper.writeValueAsString(rootNode);
-            shapeDTOs.add(new ShapeDTO(fabricJson));
+            ShapeDTO dto = mapper.treeToValue(rootNode, ShapeDTO.class);
+            shapeDTOs.add(dto);
         }
 
         return shapeDTOs;
@@ -44,7 +44,10 @@ public class ImportService {
     // import shapes from xml string
     public List<ShapeDTO> importFromXML(String xmlContent) throws Exception {
         XmlMapper xmlMapper = new XmlMapper();
-        ExportService.DrawingWrapper wrapper = xmlMapper.readValue(xmlContent, ExportService.DrawingWrapper.class);
+        ExportService.DrawingWrapper wrapper = xmlMapper.readValue(
+                xmlContent,
+                ExportService.DrawingWrapper.class
+        );
         return wrapper.shapes;
     }
 }

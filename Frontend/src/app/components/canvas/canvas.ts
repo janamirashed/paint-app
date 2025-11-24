@@ -215,13 +215,13 @@ export class Canvas implements AfterViewInit, OnChanges {
 
         shapes.forEach(shapeDTO => {
           try {
-            const fabricData = JSON.parse(shapeDTO.fabricJson);
-
-            // Create fabric object based on its type
-            this.createObjectFromData(fabricData);
-
+            // Convert ShapeDTO to Fabric.js object
+            const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
+            if (fabricObj) {
+              this.canvas.add(fabricObj);
+            }
           } catch (error) {
-            console.error('Error parsing shape:', error);
+            console.error('Error creating shape from DTO:', error, shapeDTO);
           }
         });
 
@@ -231,35 +231,97 @@ export class Canvas implements AfterViewInit, OnChanges {
     });
   }
 
-  private createObjectFromData(data: any) {
+// convert ShapeDTO back to Fabric.js objects
+  private createFabricObjectFromDTO(dto: any): fabric.Object | null {
+    const props = dto.properties || {};
+
+    const commonProps = {
+      stroke: props.strokeColor || '#000000',
+      strokeWidth: props.strokeWidth || 2,
+      fill: props.fillColor || 'transparent',
+      opacity: props.opacity || 1,
+      angle: dto.angle || 0,
+      scaleX: dto.scaleX || 1,
+      scaleY: dto.scaleY || 1,
+      selectable: true,
+      evented: true
+    };
+
     let obj: fabric.Object | null = null;
 
-    switch(data.type) {
-      case 'rect':
-        obj = new fabric.Rect(data);
+    switch(dto.type.toLowerCase()) {
+      case 'rectangle':
+      case 'square':
+        const width = Math.abs(dto.x2 - dto.x1);
+        const height = Math.abs(dto.y2 - dto.y1);
+        obj = new fabric.Rect({
+          left: Math.min(dto.x1, dto.x2),
+          top: Math.min(dto.y1, dto.y2),
+          width: props.width || width,
+          height: props.height || height,
+          ...commonProps
+        });
         break;
+
       case 'circle':
-        obj = new fabric.Circle(data);
+        const radius = props.radius || Math.abs(dto.x2 - dto.x1) / 2;
+        obj = new fabric.Circle({
+          left: dto.x1,
+          top: dto.y1,
+          radius: radius,
+          originX: 'center',
+          originY: 'center',
+          ...commonProps
+        });
         break;
+
       case 'ellipse':
-        obj = new fabric.Ellipse(data);
+        obj = new fabric.Ellipse({
+          left: dto.x1,
+          top: dto.y1,
+          rx: props.rx || Math.abs(dto.x2 - dto.x1) / 2,
+          ry: props.ry || Math.abs(dto.y2 - dto.y1) / 2,
+          originX: 'center',
+          originY: 'center',
+          ...commonProps
+        });
         break;
+
       case 'line':
-        obj = new fabric.Line([data.x1, data.y1, data.x2, data.y2], data);
+        obj = new fabric.Line(
+          [dto.x1, dto.y1, dto.x2, dto.y2],
+          {
+            ...commonProps,
+            fill: undefined // Lines don't have fill
+          }
+        );
         break;
+
       case 'triangle':
-        obj = new fabric.Triangle(data);
+        const triWidth = Math.abs(dto.x2 - dto.x1);
+        const triHeight = Math.abs(dto.y2 - dto.y1);
+        obj = new fabric.Triangle({
+          left: Math.min(dto.x1, dto.x2),
+          top: Math.min(dto.y1, dto.y2),
+          width: triWidth,
+          height: triHeight,
+          ...commonProps
+        });
         break;
+
+      case 'freehand':
       case 'path':
-        obj = new fabric.Path(data.path, data);
+        if (props.path) {
+          obj = new fabric.Path(props.path, {
+            ...commonProps,
+            fill: undefined // Freehand paths don't have fill
+          });
+        }
         break;
     }
 
-    if (obj) {
-      this.canvas.add(obj);
-    }
+    return obj;
   }
-
   // Load entire canvas from JSON (for file import)
   loadCanvasFromJSON(jsonString: string) {
     try {
