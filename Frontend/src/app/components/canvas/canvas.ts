@@ -10,6 +10,7 @@ import {
 
 import * as fabric from 'fabric';
 import {HttpClient} from '@angular/common/http';
+import { FabricToDtoService } from '../../services/fabric-to-dto';
 
 @Component({
   selector: 'app-canvas',
@@ -41,7 +42,10 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   private baseUrl = 'http://localhost:8080';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private fabricToDtoService: FabricToDtoService
+  ) {}
 
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
@@ -190,10 +194,15 @@ export class Canvas implements AfterViewInit, OnChanges {
   // ================= SAVE/LOAD FABRIC JSON ==================
 
   private saveShapeToBackend(fabricObj: fabric.Object) {
-    const fabricJson = JSON.stringify(fabricObj.toJSON());
+    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
 
-    this.http.post(`${this.baseUrl}/drawing/add`, { fabricJson }).subscribe({
-      next: () => console.log('Shape saved to backend'),
+    if (!shapeDTO) {
+      console.error('Failed to convert fabric object to DTO');
+      return;
+    }
+
+    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO).subscribe({
+      next: () => console.log('Shape saved to backend via Factory'),
       error: (err) => console.error('Failed to save shape:', err)
     });
   }
