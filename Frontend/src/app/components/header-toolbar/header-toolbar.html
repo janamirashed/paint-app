@@ -2,8 +2,14 @@
   <div class="logo">🖌️ Paint App</div>
 
   <div class="actions">
-    <button class="btn">↶ Undo</button>
-    <button class="btn">↷ Redo</button>
+    <button (click)="onUndo()" title="Undo (Ctrl+Z)">
+      ↶ Undo
+    </button>
+
+    <button (click)="onRedo()" title="Redo (Ctrl+Y)">
+      ↷ Redo
+    </button>
+
     <button class="btn" (click)="saveJSON()">💾 Save JSON</button>
     <button class="btn" (click)="saveXML()">💾 Save XML</button>
     <button class="btn" (click)="loadFile()">📂 Load</button>

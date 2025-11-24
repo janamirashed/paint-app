@@ -46,21 +46,61 @@ export class Canvas implements AfterViewInit, OnChanges {
     private http: HttpClient,
     private fabricToDtoService: FabricToDtoService
   ) {}
+  private isUndoRedoOperation = false;
+
+  undo() {
+    this.http.post<any[]>(`${this.baseUrl}/drawing/undo`, {}).subscribe({
+      next: (shapes) => {
+        this.isUndoRedoOperation = true;
+        this.reloadCanvas(shapes);
+        this.isUndoRedoOperation = false;
+      },
+      error: (err) => console.error('Undo failed:', err)
+    });
+  }
+  redo() {
+    this.http.post<any[]>(`${this.baseUrl}/drawing/redo`, {}).subscribe({
+      next: (shapes) => {
+        this.isUndoRedoOperation = true;
+        this.reloadCanvas(shapes);
+        this.isUndoRedoOperation = false;
+      },
+      error: (err) => console.error('Redo failed:', err)
+    });
+  }
+
+  private reloadCanvas(shapes: any[]) {
+    this.canvas.clear();
+    shapes.forEach(shapeDTO => {
+      try {
+        const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
+        if (fabricObj) {
+          this.canvas.add(fabricObj);
+        }
+      } catch (error) {
+        console.error('Error creating shape from DTO:', error, shapeDTO);
+      }
+    });
+    this.canvas.renderAll();
+  }
+
+  private saveStateToBackend() {
+    if (this.isUndoRedoOperation) return; // Don't save state during undo/redo
+
+    this.http.post(`${this.baseUrl}/drawing/save-state`, {}).subscribe({
+      next: () => console.log('State saved'),
+      error: (err) => console.error('Failed to save state:', err)
+    });
+  }
 
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
       selection: true
     });
-
-    // Initialize the free drawing brush
     this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
 
     this.attachFabricEvents();
-
-    // Apply initial tool state
     this.handleToolChange();
-
-    // Load existing shapes from backend
     this.loadShapesFromBackend();
   }
 
@@ -97,7 +137,35 @@ export class Canvas implements AfterViewInit, OnChanges {
         this.saveShapeToBackend(e.path);
       }
     });
+
+    // Track object modifications (move, scale, rotate)
+    this.canvas.on('object:modified', (e: any) => {
+      if (e.target && !this.isUndoRedoOperation) {
+        this.saveStateToBackend();
+        // Update the modified object in backend
+        this.updateShapeInBackend(e.target);
+      }
+    });
+    // Track selection changes for property updates
+    this.canvas.on('selection:created', () => {
+      // save state on select ( before user modifies )
+      this.saveStateToBackend();
+    });
   }
+
+  private updateShapeInBackend(fabricObj: fabric.Object) {
+    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
+    if (!shapeDTO) {
+      console.error('Failed to convert fabric object to DTO');
+      return;
+    }
+    this.saveShapeToBackend(fabricObj);
+
+  }
+
+
+
+
 
   // ========================= TOOL MANAGEMENT =========================
 
@@ -134,6 +202,7 @@ export class Canvas implements AfterViewInit, OnChanges {
   handleMouseDown(e: fabric.TEvent) {
     // For freehand/pencil, let fabric handle it
     if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
+      this.saveStateToBackend();
       return;
     }
 
@@ -147,6 +216,8 @@ export class Canvas implements AfterViewInit, OnChanges {
       this.canvas.selection = false;
       this.canvas.discardActiveObject();
       this.canvas.renderAll();
+
+      this.saveStateToBackend();
     }
 
     if (this.activeTool === 'rectangle') this.startRectangle();
@@ -341,6 +412,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   // Clear canvas and backend
   clearCanvas() {
+    this.saveStateToBackend();
     this.canvas.clear();
     this.http.delete(`${this.baseUrl}/drawing/clear`).subscribe({
       next: () => console.log('Canvas cleared'),
@@ -596,6 +668,10 @@ export class Canvas implements AfterViewInit, OnChanges {
     const activeObject = this.canvas.getActiveObject();
     if (!activeObject) return;
 
+    if (!this.isUndoRedoOperation) {
+      this.saveStateToBackend();
+    }
+
     const updates: any = {};
 
     // Apply stroke width
@@ -620,5 +696,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     activeObject.set(updates);
     this.canvas.renderAll();
+    this.updateShapeInBackend(activeObject);
   }
+
 }

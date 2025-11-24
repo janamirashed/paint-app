@@ -108,6 +108,19 @@ export class HeaderToolbar {
     });
   }
 
+  onUndo() {
+    if (this.canvasComponent) {
+      this.canvasComponent.undo();
+    }
+  }
+
+  onRedo() {
+    if (this.canvasComponent) {
+      this.canvasComponent.redo();
+    }
+  }
+
+
   private downloadFile(blob: Blob, filename: string) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
