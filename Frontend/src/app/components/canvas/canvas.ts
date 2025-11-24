@@ -85,12 +85,19 @@ export class Canvas implements AfterViewInit, OnChanges {
   }
 
   private saveStateToBackend() {
-    if (this.isUndoRedoOperation) return; // Don't save state during undo/redo
+    // Don't save state during undo/redo operations
+    if (this.isUndoRedoOperation) return;
 
-    this.http.post(`${this.baseUrl}/drawing/save-state`, {}).subscribe({
-      next: () => console.log('State saved'),
-      error: (err) => console.error('Failed to save state:', err)
-    });
+    this.http.post(`${this.baseUrl}/drawing/save-state`, {}, { responseType: 'text' })
+      .subscribe({
+        next: (res) => {
+          console.log('State saved:', res); // Backend can return a confirmation string
+        },
+        error: (err) => {
+          // Only real HTTP errors will trigger this
+          console.error('Failed to save state:', err);
+        }
+      });
   }
 
   ngAfterViewInit() {
@@ -272,7 +279,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       return;
     }
 
-    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO).subscribe({
+    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO, { responseType: 'text' }).subscribe({
       next: () => console.log('Shape saved to backend via Factory'),
       error: (err) => console.error('Failed to save shape:', err)
     });
