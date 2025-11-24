@@ -1,67 +1,129 @@
 <aside class="properties-panel">
-  <h3>Properties</h3>
+  <details class="prop-group" open>
+    <summary>
+      <span>Stroke/Outline</span>
+    </summary>
+    <div class="details-content">
+      <!-- Stroke Color -->
+      <div>
+        <label>Stroke Color</label>
+        <div class="color-grid">
+          <div class="color-box"
+               [class.active]="strokeColor === '#000000'"
+               style="background-color: #000000;"
+               (click)="strokeColor = '#000000'; onChange()"></div>
+          <div class="color-box"
+               [class.active]="strokeColor === '#FFB3B3'"
+               style="background-color: #FFB3B3;"
+               (click)="strokeColor = '#FFB3B3'; onChange()"></div>
+          <div class="color-box"
+               [class.active]="strokeColor === '#c9b2f5'"
+               style="background-color: #c9b2f5;"
+               (click)="strokeColor = '#c9b2f5'; onChange()"></div>
+          <div class="color-box"
+               [class.active]="strokeColor === '#a5f3ea'"
+               style="background-color: #a5f3ea;"
+               (click)="strokeColor = '#a5f3ea'; onChange()"></div>
+          <div class="color-add" title="Pick custom color">
+            <input type="color"
+                   [(ngModel)]="strokeColor"
+                   (change)="onChange()"
+                   style="position: absolute; opacity: 0; width: 32px; height: 32px; cursor: pointer;">
+            <span>+</span>
+          </div>
+        </div>
+      </div>
 
-  <!-- Stroke Width -->
-  <div class="prop-group">
-    <label>Stroke Width</label>
-    <input
-      type="range"
-      min="1"
-      max="20"
-      [(ngModel)]="strokeWidth"
-      (input)="onChange()"
-    />
-    <p>{{ strokeWidth }}px</p>
-  </div>
+      <!-- Stroke Width -->
+      <div>
+        <label>Stroke Width</label>
+        <input
+          type="range"
+          min="1"
+          max="20"
+          [(ngModel)]="strokeWidth"
+          (input)="onChange()"
+        />
+        <div class="range-label">
+          <span></span>
+          <span class="range-value">{{ strokeWidth }}px</span>
+        </div>
+      </div>
 
-  <!-- Stroke Color -->
-  <div class="prop-group">
-    <label>Stroke Color</label>
-    <input
-      type="color"
-      [(ngModel)]="strokeColor"
-      (change)="onChange()"
-      class="color-picker"
-    />
-  </div>
+      <!-- Line Style -->
+      <div>
+        <label>Line Style</label>
+        <select [(ngModel)]="lineStyle" (change)="onChange()">
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+        </select>
+      </div>
+    </div>
+  </details>
 
-  <!-- Fill Color -->
-  <div class="prop-group">
-    <label>Fill Color</label>
-    <input
-      type="color"
-      [(ngModel)]="fillColor"
-      (change)="onChange()"
-      class="color-picker"
-    />
-  </div>
+  <details class="prop-group" open>
+    <summary>
+      <span>Fill</span>
+    </summary>
+    <div class="details-content">
+      <div>
+        <label>Fill Color</label>
+        <div class="color-grid">
+          <div class="color-box"
+               [class.active]="fillColor === 'transparent'"
+               style="background: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc); background-size: 8px 8px; background-position: 0 0, 4px 4px;"
+               (click)="fillColor = 'transparent'; onChange()"
+               title="No Fill"></div>
+          <div class="color-box"
+               [class.active]="fillColor === '#f5edb2'"
+               style="background-color: #f5edb2;"
+               (click)="fillColor = '#f5edb2'; onChange()"></div>
+          <div class="color-box"
+               [class.active]="fillColor === '#FFB5C2'"
+               style="background-color: #FFB5C2;"
+               (click)="fillColor = '#FFB5C2'; onChange()"></div>
+          <div class="color-box"
+               [class.active]="fillColor === '#a5f3ea'"
+               style="background-color: #a5f3ea;"
+               (click)="fillColor = '#a5f3ea'; onChange()"></div>
+          <div class="color-add" title="Pick custom color">
+            <input type="color"
+                   [(ngModel)]="fillColor"
+                   (change)="onChange()"
+                   style="position: absolute; opacity: 0; width: 32px; height: 32px; cursor: pointer;">
+            <span>+</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
 
-  <!-- Opacity -->
-  <div class="prop-group">
-    <label>Opacity</label>
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [(ngModel)]="opacity"
-      (input)="onChange()"
-    />
-    <p>{{ (opacity * 100) | number:'1.0-0' }}%</p>
-  </div>
+  <details class="prop-group" open>
+    <summary>
+      <span>Opacity</span>
+    </summary>
+    <div class="details-content">
+      <div>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [(ngModel)]="opacity"
+          (input)="onChange()"
+        />
+        <div class="range-label">
+          <span></span>
+          <span class="range-value">{{ (opacity * 100) | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  </details>
 
-  <!-- Line Style -->
-  <div class="prop-group">
-    <label>Line Style</label>
-    <select [(ngModel)]="lineStyle" (change)="onChange()">
-      <option value="solid">Solid</option>
-      <option value="dashed">Dashed</option>
-    </select>
+  <div class="prop-group" style="background: transparent; padding: 0; margin-top: auto;">
+    <button (click)="clear.emit()" class="clear-btn">
+      <span>🗑</span>
+      <span>Clear Canvas</span>
+    </button>
   </div>
 </aside>
-
-<div class="prop-group">
-  <button (click)="clear.emit()" class="clear-btn">
-    🗑️ Clear Canvas
-  </button>
-</div>

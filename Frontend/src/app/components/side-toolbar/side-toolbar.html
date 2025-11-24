@@ -1,59 +1,69 @@
 <aside class="side-toolbar">
   <button
     class="tool-btn"
-    (click)="selectTool('freehand'); setActive('freehand')"
-    [class.active]="activeButton === 'freehand'"
-  >
-    🖊️
+    [class.active]="activeButton === 'select'"
+    (click)="selectTool('select'); setActive('select')"
+    title="Selection Tool">
+    <span class="icon-select">⌖</span>
   </button>
 
-   <button
-    class="tool-btn"
-    (click)="selectTool('select'); setActive('select')"
-    [class.active]="activeButton === 'select'"
-  >
-    
-  </button>
   <button
     class="tool-btn"
-    (click)="selectTool('line'); setActive('line')"
+    [class.active]="activeButton === 'freehand'"
+    (click)="selectTool('freehand'); setActive('freehand')"
+    title="Pencil">
+    <span class="icon-pencil">✎</span>
+  </button>
+
+  <div class="tool-divider"></div>
+
+  <button
+    class="tool-btn"
     [class.active]="activeButton === 'line'"
-  >
-    −
+    (click)="selectTool('line'); setActive('line')"
+    title="Line">
+    <span class="icon-line">─</span>
   </button>
+
   <button
     class="tool-btn"
-    (click)="selectTool('circle');setActive('circle')"
-    [class.active]="activeButton === 'circle'"
-  >
-    ○
-  </button>
-  <button
-    class="tool-btn"
-    (click)="selectTool('rectangle');setActive('rectangle')"
     [class.active]="activeButton === 'rectangle'"
-  >
-    ▢
+    (click)="selectTool('rectangle'); setActive('rectangle')"
+    title="Rectangle">
+    <span class="icon-rectangle">▭</span>
   </button>
+
   <button
     class="tool-btn"
-    (click)="selectTool('square'); setActive('square')"
-    [class.active]="activeButton === 'square'"
-  >
-    ▣
+    [class.active]="activeButton === 'circle'"
+    (click)="selectTool('circle'); setActive('circle')"
+    title="Circle">
+    <span class="icon-circle">〇</span>
   </button>
+
   <button
     class="tool-btn"
-    (click)="selectTool('triangle'); setActive('triangle')"
-    [class.active]="activeButton === 'triangle'"
-  >
-    △
-  </button>
-  <button
-    class="tool-btn"
-    (click)="selectTool('ellipse');setActive('ellipse')"
     [class.active]="activeButton === 'ellipse'"
-  >
-    ⬭
+    (click)="selectTool('ellipse'); setActive('ellipse')"
+    title="Ellipse">
+    <span class="icon-ellipse">⬭</span>
   </button>
+
+  <button
+    class="tool-btn"
+    [class.active]="activeButton === 'square'"
+    (click)="selectTool('square'); setActive('square')"
+    title="Square">
+    <span class="icon-square">◻</span>
+  </button>
+
+  <button
+    class="tool-btn"
+    [class.active]="activeButton === 'triangle'"
+    (click)="selectTool('triangle'); setActive('triangle')"
+    title="Triangle">
+    <span class="icon-triangle">△</span>
+  </button>
+
+  <div class="tool-spacer"></div>
 </aside>

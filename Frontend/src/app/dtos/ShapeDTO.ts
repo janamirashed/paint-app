@@ -1,4 +1,5 @@
 export interface ShapeDTO{
+    id?: string;
     type : string ;
     x1 : number ;
     y1 : number ;
