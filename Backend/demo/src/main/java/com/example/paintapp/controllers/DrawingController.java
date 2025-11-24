@@ -7,19 +7,29 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/drawing")
+@CrossOrigin(
+        origins = "http://localhost:4200",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowedHeaders = "*",
+        allowCredentials = "true"
+)
 public class DrawingController {
 
     @Autowired
     private DrawingService service;
 
-    /**
-     * Add a new shape to the canvas
-     * Uses Factory Pattern inside the service to create the shape
-     */
+    @PostMapping("/save-state")
+    public void saveState() {
+        service.saveState();
+
+    }
+
     @PostMapping("/add")
     public ResponseEntity<String> addShape(@RequestBody ShapeDTO dto) {
         try {
@@ -32,9 +42,8 @@ public class DrawingController {
         }
     }
 
-    /**
-     * Get all shapes from the canvas
-     */
+
+    //Get all shapes from the canvas
     @GetMapping("/all")
     public ResponseEntity<List<ShapeDTO>> getShapes() {
         try {
@@ -46,9 +55,8 @@ public class DrawingController {
         }
     }
 
-    /**
-     * Clear all shapes from the canvas
-     */
+
+    //Clear all shapes from the canvas
     @DeleteMapping("/clear")
     public ResponseEntity<String> clear() {
         try {
@@ -59,5 +67,31 @@ public class DrawingController {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/undo")
+    public ResponseEntity<List<ShapeDTO>> undo() {
+        List<ShapeDTO> shapes = service.undo();
+        return ResponseEntity.ok(shapes);
+    }
+
+    @PostMapping("/redo")
+    public ResponseEntity<List<ShapeDTO>> redo() {
+        List<ShapeDTO> shapes = service.redo();
+        return ResponseEntity.ok(shapes);
+    }
+
+    @GetMapping("/can-undo")
+    public Map<String, Boolean> canUndo() {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("canUndo", service.canUndo());
+        return response;
+    }
+
+    @GetMapping("/can-redo")
+    public Map<String, Boolean> canRedo() {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("canRedo", service.canRedo());
+        return response;
     }
 }
