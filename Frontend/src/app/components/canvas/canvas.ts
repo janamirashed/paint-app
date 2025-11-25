@@ -85,16 +85,16 @@ export class Canvas implements AfterViewInit, OnChanges {
   ////////////
 deleteSelected() {
       const objs = this.canvas.getActiveObjects();
-  
+
       if (!objs || objs.length === 0) return;
       this.update.saveStateToBackend(this.isUndoRedoOperation);
-  
+
       objs.forEach((obj: fabric.Object) => {
         console.log('Deleting: '+obj.get('id'));
         this.deleteShapeInBackend(obj);
         this.canvas.remove(obj);
       });
-  
+
       this.canvas.discardActiveObject();
       this.canvas.requestRenderAll();
     }
@@ -110,7 +110,7 @@ deleteSelected() {
       });
 
   }
-  
+
 
   duplicateSelected() {
     const selectedObjects = this.canvas.getActiveObjects();
@@ -182,18 +182,17 @@ deleteSelected() {
       }
     });
 
-    // Track object modifications (move, scale, rotate)
     this.canvas.on('object:modified', (e: any) => {
-      if (e.target && !this.isUndoRedoOperation) {
+      const objs = this.canvas.getActiveObjects();
+      if (!objs || objs.length === 0) return;
         this.update.saveStateToBackend(this.isUndoRedoOperation);
-        // Update the modified object in backend
-        this.update.updateShapeInBackend(e.target);
-      }
-    });
-    // Track selection changes for property updates
-    this.canvas.on('selection:created', () => {
-      // save state on select ( before user modifies )
-      this.update.saveStateToBackend(this.isUndoRedoOperation);
+
+      objs.forEach((obj: fabric.Object) => {
+        console.log('Updating: '+obj.get('id'));
+        this.update.updateShapeInBackend(obj);
+      });
+      //this.canvas.discardActiveObject();
+      this.canvas.requestRenderAll();
     });
   }
 
@@ -247,12 +246,12 @@ deleteSelected() {
 
       this.update.saveStateToBackend(this.isUndoRedoOperation);
     }
-    if (this.activeTool === 'rectangle'){ 
+    if (this.activeTool === 'rectangle'){
       this.drawingObject = this.draw.startRectangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
     }
-    else if (this.activeTool === 'ellipse'){ 
+    else if (this.activeTool === 'ellipse'){
       this.drawingObject = this.draw.startEllipse(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
@@ -263,12 +262,12 @@ deleteSelected() {
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
     }
-    else if (this.activeTool === 'circle'){ 
+    else if (this.activeTool === 'circle'){
       this.drawingObject = this.draw.startCircle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
       this.drawingObject.set('id', uuidv4());
           this.canvas.add(this.drawingObject);
     }
-    else if (this.activeTool === 'triangle'){ 
+    else if (this.activeTool === 'triangle'){
       this.drawingObject = this.draw.startTriangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
