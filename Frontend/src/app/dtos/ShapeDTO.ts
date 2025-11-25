@@ -5,5 +5,8 @@ export interface ShapeDTO{
     y1 : number ;
     x2 : number ;
     y2 : number ;
+    angle : number ;
+    scaleX : number ;
+    scaleY: number ;
     properties : {[key : string] : any}
 }
