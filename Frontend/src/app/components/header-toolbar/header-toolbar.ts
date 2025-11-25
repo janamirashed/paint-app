@@ -96,11 +96,19 @@ export class HeaderToolbar {
 
       if (this.canvasComponent) {
         this.canvasComponent.loadCanvasFromJSON(content);
-        alert('JSON imported successfully!');
+
+        setTimeout(() => {
+          if (this.canvasComponent?.canvas) {
+            this.canvasComponent.canvas.renderAll();
+          }
+        }, 100);
 
         // Sync with backend
         this.httpService.importJSON(content).subscribe({
-          next: () => console.log('Synced with backend'),
+          next: () => {
+            console.log('Synced with backend');
+            alert('JSON imported successfully!');
+          },
           error: (err) => console.error('Backend sync failed:', err)
         });
       } else {
