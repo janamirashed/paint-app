@@ -22,7 +22,7 @@ export class HeaderToolbar {
 
 
   deleteSelected() {
-   this.deleteRequest.emit(); 
+   this.deleteRequest.emit();
 
   }
   onUndoClick() {
@@ -41,34 +41,37 @@ export class HeaderToolbar {
       return;
     }
 
-    try {
-      const canvasJson = this.canvasComponent.getCanvasAsJSON();
+    const canvasJson = this.canvasComponent.getCanvasAsJSON();
 
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: 'drawing.json',
-        types: [{
-          description: 'JSON Files',
-          accept: { 'application/json': ['.json'] }
-        }]
-      });
-
-      const writable = await handle.createWritable();
-      await writable.write(canvasJson);
-      await writable.close();
-
-      console.log('File saved successfully');
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Error saving file:', error);
-        alert('Failed to save file');
+    // 1. Check if browser supports the modern File System Access API
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: 'drawing.json',
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(canvasJson);
+        await writable.close();
+        console.log('File saved successfully');
+      } catch (error: any) {
+        if (error.name !== 'AbortError') console.error('Error saving file:', error);
       }
+    } else {
+      // 2. Fallback for Brave/Firefox/Others: Use your existing helper
+      const blob = new Blob([canvasJson], { type: 'application/json' });
+      this.downloadFile(blob, 'drawing.json');
     }
   }
 
   async saveXML() {
-    try {
-      this.httpService.exportXML().subscribe({
-        next: async (blob) => {
+    this.httpService.exportXML().subscribe({
+      next: async (blob) => {
+        // 1. Check if browser supports the modern File System Access API
+        if ('showSaveFilePicker' in window) {
           try {
             const handle = await (window as any).showSaveFilePicker({
               suggestedName: 'drawing.xml',
@@ -77,27 +80,23 @@ export class HeaderToolbar {
                 accept: { 'application/xml': ['.xml'] }
               }]
             });
-
             const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();
-
             console.log('XML file saved successfully');
           } catch (error: any) {
-            if (error.name !== 'AbortError') {
-              console.error('Error saving XML:', error);
-              alert('Failed to save XML file');
-            }
+            if (error.name !== 'AbortError') console.error('Error saving XML:', error);
           }
-        },
-        error: (err) => {
-          console.error('Error exporting XML:', err);
-          alert('Failed to export XML');
+        } else {
+          // 2. Fallback for Brave/Firefox/Others
+          this.downloadFile(blob, 'drawing.xml');
         }
-      });
-    } catch (error) {
-      console.error('Error:', error);
-    }
+      },
+      error: (err) => {
+        console.error('Error exporting XML (Check Backend CORS):', err);
+        alert('Failed to export XML. Check console for CORS errors.');
+      }
+    });
   }
 
   loadFile() {
