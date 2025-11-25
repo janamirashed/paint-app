@@ -316,6 +316,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     const commonProps = {
       stroke: props.strokeColor || '#000000',
       strokeWidth: props.strokeWidth || 2,
+      strokeDashArray: props.lineStyle === 'dashed' ? [10, 10] : [],
       fill: props.fillColor || 'transparent',
       opacity: props.opacity || 1,
       angle: dto.angle || 0,
