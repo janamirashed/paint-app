@@ -50,6 +50,19 @@ public class DrawingController {
         }
     }
 
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteShape(@PathVariable String id) {
+        boolean deleted = service.deleteShape(id);
+
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Shape not found");
+        }
+        return ResponseEntity.ok("Shape deleted successfully");
+    }
+
+
     @PutMapping("/update")
     public ResponseEntity<String> updateShape(@RequestBody ShapeDTO dto) {
         try {
