@@ -64,6 +64,27 @@ public class DrawingService {
         return false;
     }
 
+//    public boolean deleteShape(String shapeId) {
+//        Shape shape = shapes.get(shapeId);
+//        if (shape == null) {
+//            throw new IllegalArgumentException("Shape must have an ID for delete");
+//        }
+//        shapes.remove(shapeId);
+//
+//    }
+
+    public boolean deleteShape(String id) {
+        System.out.println("DELETE CALLED WITH ID = " + id);
+        System.out.println("CURRENT KEYS = " + shapes.keySet());
+        if (shapes.containsKey(id)) {
+            shapes.remove(id);
+            System.out.println("Shape deleted with ID: " + id);
+            return true;
+        }
+        System.out.println("Shape not found for update: " + id);
+        return false;
+    }
+
     public ShapeDTO duplicateShape(String shapeId) {
         Shape original = shapes.get(shapeId);
         if (original == null) {

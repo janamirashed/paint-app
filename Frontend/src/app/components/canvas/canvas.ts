@@ -111,6 +111,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.saveStateToBackend();
 
     objs.forEach((obj: fabric.Object) => {
+      console.log('Deleting: '+obj.get('id'));
       this.deleteShapeInBackend(obj);
       this.canvas.remove(obj);
     });
@@ -135,7 +136,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     const active = this.canvas.getActiveObject();
     if (!active) return;
 
-    this.http.post<ShapeDTO>(`http://localhost:8080/drawing/duplicate/${active.get('id')}`, {})
+    this.http.post<ShapeDTO>(`${this.baseUrl}/drawing/duplicate/${active.get('id')}`, {})
       .subscribe({
         next: (dto) => {
           const newShape = this.createFabricObjectFromDTO(dto);
@@ -407,6 +408,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       left: props.left || dto.x1,
       top: props.top || dto.y1,
       selectable: true,
+      id: dto.id,
       evented: true
     };
 
