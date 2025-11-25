@@ -83,7 +83,7 @@ export class FabricToDtoService {
     const props: { [key: string]: any } = {
       strokeColor: obj.stroke || '#000000',
       strokeWidth: obj.strokeWidth || 1,
-      fillColor: (obj.fill && obj.fill !== 'transparent') ? obj.fill : '#00000000',
+      fillColor: (obj.fill && obj.fill !== 'transparent') ? obj.fill : 'transparent',
       opacity: obj.opacity || 1,
       angle: obj.angle || 0,
       scaleX: obj.scaleX || 1,

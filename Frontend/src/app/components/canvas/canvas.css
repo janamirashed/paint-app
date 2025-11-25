@@ -1,12 +1,14 @@
 .canvas-container {
   flex: 1;
   overflow: auto;
-  padding: 32px;
+  padding: 20px 32px;
   background-image: radial-gradient(#E8E8E8 1px, transparent 0);
   background-size: 20px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  min-width: 0;
 }
 
 canvas {
@@ -15,4 +17,7 @@ canvas {
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   cursor: crosshair;
+  max-width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+  object-fit: contain;
 }
