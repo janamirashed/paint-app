@@ -17,7 +17,6 @@ canvas {
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   cursor: crosshair;
-  max-width: calc(100% - 40px);
-  max-height: calc(100% - 40px);
-  object-fit: contain;
+  /* Remove max-width/max-height that cause scaling issues */
+  /* Keep the canvas at its actual size */
 }
