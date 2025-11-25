@@ -1,5 +1,12 @@
 package com.example.paintapp.services;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ShapeDTO {
@@ -9,7 +16,12 @@ public class ShapeDTO {
     private Double angle;
     private Double scaleX;
     private Double scaleY;
-    private Map<String, Object> properties;
+    private Map<String, Object> properties = new HashMap<>();
+
+    // Special handling for path arrays in XML
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "path")
+    private List<String> pathElements = new ArrayList<>();
 
     // Constructors
     public ShapeDTO() {}
@@ -41,8 +53,50 @@ public class ShapeDTO {
     public Double getScaleY() { return scaleY; }
     public void setScaleY(Double scaleY) { this.scaleY = scaleY; }
 
-    public Map<String, Object> getProperties() { return properties; }
-    public void setProperties(Map<String, Object> properties) { this.properties = properties; }
+    public Map<String, Object> getProperties() {
+        // If we have path elements, combine them into a single path string
+        if (!pathElements.isEmpty() && !properties.containsKey("path")) {
+            properties.put("path", String.join(" ", pathElements));
+        }
+        return properties;
+    }
 
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
 
+    // This method allows Jackson to set any property that doesn't have a specific setter
+    @JsonAnySetter
+    public void setProperty(String key, Object value) {
+        if (this.properties == null) {
+            this.properties = new HashMap<>();
+        }
+
+        // Convert numeric strings to appropriate types
+        if (value instanceof String) {
+            String strValue = (String) value;
+            try {
+                // Try to parse as double first
+                if (strValue.contains(".")) {
+                    this.properties.put(key, Double.parseDouble(strValue));
+                } else {
+                    // Try as integer
+                    this.properties.put(key, Integer.parseInt(strValue));
+                }
+            } catch (NumberFormatException e) {
+                // Keep as string if not a number
+                this.properties.put(key, value);
+            }
+        } else {
+            this.properties.put(key, value);
+        }
+    }
+
+    public List<String> getPathElements() {
+        return pathElements;
+    }
+
+    public void setPathElements(List<String> pathElements) {
+        this.pathElements = pathElements;
+    }
 }
