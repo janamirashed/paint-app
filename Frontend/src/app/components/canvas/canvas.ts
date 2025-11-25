@@ -71,13 +71,30 @@ export class Canvas implements AfterViewInit, OnChanges {
   }
 
   private reloadCanvas(shapes: any[]) {
+    console.log('📥 RELOADING CANVAS with shapes:', shapes);
     this.canvas.clear();
     shapes.forEach(shapeDTO => {
       try {
+        console.log('🔄 Creating shape from DTO:', shapeDTO);
         const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
         if (fabricObj) {
           fabricObj.set('id', shapeDTO.id);
           this.canvas.add(fabricObj);
+
+
+          console.log('✅ Created fabric object:', {
+            id: shapeDTO.id,
+            type: fabricObj.type,
+            left: fabricObj.left,
+            top: fabricObj.top,
+            scaleX: fabricObj.scaleX,
+            scaleY: fabricObj.scaleY,
+            angle: fabricObj.angle,
+            width: (fabricObj as any).width,
+            height: (fabricObj as any).height
+
+
+          });
         }
       } catch (error) {
         console.error('Error creating shape from DTO:', error, shapeDTO);
@@ -114,6 +131,23 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   }
 
+  duplicateSelected() {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+
+    this.http.post<ShapeDTO>(`http://localhost:8080/drawing/duplicate/${active.get('id')}`, {})
+      .subscribe({
+        next: (dto) => {
+          const newShape = this.createFabricObjectFromDTO(dto);
+          if (!newShape) return console.error('Failed to convert DTO to fabric object');
+          this.canvas.add(newShape);
+          this.canvas.setActiveObject(newShape);
+          this.canvas.requestRenderAll();
+        },
+        error: (err) => console.error('Duplication failed:', err)
+      });
+  }
+
 
   private saveStateToBackend() {
     // Don't save state during undo/redo operations
@@ -122,7 +156,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.http.post(`${this.baseUrl}/drawing/save-state`, {}, { responseType: 'text' })
       .subscribe({
         next: (res) => {
-          console.log('State saved:', res); // Backend can return a confirmation string
+          console.log('State saved:', res);
         },
         error: (err) => {
           // Only real HTTP errors will trigger this
@@ -293,6 +327,23 @@ export class Canvas implements AfterViewInit, OnChanges {
     const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
     if (!shapeDTO) return console.error('Failed to convert fabric object to DTO');
 
+    //for debugging
+    console.log('📤 SENDING UPDATE:', {
+      id: shapeDTO.id,
+      type: shapeDTO.type,
+      bounds: { x1: shapeDTO.x1, y1: shapeDTO.y1, x2: shapeDTO.x2, y2: shapeDTO.y2 },
+      properties: shapeDTO.properties,
+      fabricObject: {
+        left: fabricObj.left,
+        top: fabricObj.top,
+        scaleX: fabricObj.scaleX,
+        scaleY: fabricObj.scaleY,
+        angle: fabricObj.angle,
+        width: (fabricObj as any).width,
+        height: (fabricObj as any).height
+      }
+
+    });
     this.http.put(`${this.baseUrl}/drawing/update`, shapeDTO, { responseType: 'text' })
       .subscribe({
         next: (res) => console.log(`Shape updated in backend (ID: ${shapeDTO.id})`),
@@ -347,11 +398,14 @@ export class Canvas implements AfterViewInit, OnChanges {
     const commonProps = {
       stroke: props.strokeColor || '#000000',
       strokeWidth: props.strokeWidth || 2,
+      strokeDashArray: props.lineStyle === 'dashed' ? [10, 10] : [],
       fill: props.fillColor || 'transparent',
       opacity: props.opacity || 1,
       angle: dto.angle || 0,
       scaleX: dto.scaleX || 1,
       scaleY: dto.scaleY || 1,
+      left: props.left || dto.x1,
+      top: props.top || dto.y1,
       selectable: true,
       evented: true
     };
@@ -361,13 +415,9 @@ export class Canvas implements AfterViewInit, OnChanges {
     switch(dto.type.toLowerCase()) {
       case 'rectangle':
       case 'square':
-        const width = Math.abs(dto.x2 - dto.x1);
-        const height = Math.abs(dto.y2 - dto.y1);
         obj = new fabric.Rect({
-          left: Math.min(dto.x1, dto.x2),
-          top: Math.min(dto.y1, dto.y2),
-          width: props.width || width,
-          height: props.height || height,
+          width: props.width ||Math.abs(dto.x2 - dto.x1),
+          height: props.height || Math.abs(dto.y2 - dto.y1),
           ...commonProps
         });
         break;
@@ -375,8 +425,6 @@ export class Canvas implements AfterViewInit, OnChanges {
       case 'circle':
         const radius = props.radius || Math.abs(dto.x2 - dto.x1) / 2;
         obj = new fabric.Circle({
-          left: dto.x1,
-          top: dto.y1,
           radius: radius,
           originX: 'center',
           originY: 'center',
@@ -386,8 +434,6 @@ export class Canvas implements AfterViewInit, OnChanges {
 
       case 'ellipse':
         obj = new fabric.Ellipse({
-          left: dto.x1,
-          top: dto.y1,
           rx: props.rx || Math.abs(dto.x2 - dto.x1) / 2,
           ry: props.ry || Math.abs(dto.y2 - dto.y1) / 2,
           originX: 'center',
@@ -410,10 +456,8 @@ export class Canvas implements AfterViewInit, OnChanges {
         const triWidth = Math.abs(dto.x2 - dto.x1);
         const triHeight = Math.abs(dto.y2 - dto.y1);
         obj = new fabric.Triangle({
-          left: Math.min(dto.x1, dto.x2),
-          top: Math.min(dto.y1, dto.y2),
-          width: triWidth,
-          height: triHeight,
+          width: props.width || triWidth,
+          height: props.height || triHeight,
           ...commonProps
         });
         break;
@@ -424,11 +468,9 @@ export class Canvas implements AfterViewInit, OnChanges {
           try {
             let pathString = '';
 
-            // Handle both string format and array format
             if (typeof props.path === 'string') {
               pathString = props.path;
             } else if (Array.isArray(props.path)) {
-              // Convert array format to string
               pathString = props.path.join(' ');
             }
 

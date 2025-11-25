@@ -1,8 +1,10 @@
 <div class="paint-app">
   <app-header-toolbar
+    [canvasComponent]="canvasRef"
     (deleteRequest)="canvasRef.deleteSelected()"
     (undoRequest)="canvasRef.undo()"
     (redoRequest)="canvasRef.redo()"
+    (duplicateRequest)="canvasRef.duplicateSelected()"
   ></app-header-toolbar>
   <div class="main-layout">
     <app-side-toolbar (toolSelected)="onToolChange($event)"></app-side-toolbar>

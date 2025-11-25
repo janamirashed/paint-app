@@ -14,6 +14,7 @@ export class HeaderToolbar {
   @Output() deleteRequest = new EventEmitter<void>();
   @Output() undoRequest = new EventEmitter<void>();
   @Output() redoRequest = new EventEmitter<void>();
+  @Output() duplicateRequest = new EventEmitter<void>();
   @Input() canvasComponent?: Canvas;
 
   constructor(private httpService: HttpService) {}
@@ -25,7 +26,9 @@ export class HeaderToolbar {
   onUndoClick() {
     this.undoRequest.emit();
   }
-
+  duplicateSelected() {
+    this.duplicateRequest.emit();
+  }
   onRedoClick() {
     this.redoRequest.emit();
   }
@@ -93,11 +96,19 @@ export class HeaderToolbar {
 
       if (this.canvasComponent) {
         this.canvasComponent.loadCanvasFromJSON(content);
-        alert('JSON imported successfully!');
+
+        setTimeout(() => {
+          if (this.canvasComponent?.canvas) {
+            this.canvasComponent.canvas.renderAll();
+          }
+        }, 100);
 
         // Sync with backend
         this.httpService.importJSON(content).subscribe({
-          next: () => console.log('Synced with backend'),
+          next: () => {
+            console.log('Synced with backend');
+            alert('JSON imported successfully!');
+          },
           error: (err) => console.error('Backend sync failed:', err)
         });
       } else {
