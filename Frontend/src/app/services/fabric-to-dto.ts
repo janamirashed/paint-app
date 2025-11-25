@@ -14,6 +14,7 @@ export class FabricToDtoService {
     const bounds = fabricObj.getBoundingRect();
 
     const dto: ShapeDTO = {
+      id : fabricObj.get('id'),
       type: type,
       x1: bounds.left,
       y1: bounds.top,

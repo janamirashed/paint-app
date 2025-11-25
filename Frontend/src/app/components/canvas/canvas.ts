@@ -11,7 +11,8 @@ import {
 import * as fabric from 'fabric';
 import {HttpClient} from '@angular/common/http';
 import { FabricToDtoService } from '../../services/fabric-to-dto';
-
+import { v4 as uuidv4 } from 'uuid';
+import {ShapeDTO} from '../../dtos/ShapeDTO';
 @Component({
   selector: 'app-canvas',
   standalone: true,
@@ -25,7 +26,7 @@ export class Canvas implements AfterViewInit, OnChanges {
   @Input() activeTool: string = 'select';
 
   @Input() currentProperties: any = {
-    strokeWidth: 5,
+    strokeWidth: 3,
     strokeColor: '#000000',
     fillColor: 'transparent',
     opacity: 1,
@@ -75,6 +76,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       try {
         const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
         if (fabricObj) {
+          fabricObj.set('id', shapeDTO.id);
           this.canvas.add(fabricObj);
         }
       } catch (error) {
@@ -83,6 +85,52 @@ export class Canvas implements AfterViewInit, OnChanges {
     });
     this.canvas.renderAll();
   }
+
+
+  deleteSelected() {
+    const objs = this.canvas.getActiveObjects();
+
+    if (!objs || objs.length === 0) return;
+    this.saveStateToBackend();
+
+    objs.forEach((obj: fabric.Object) => {
+      this.deleteShapeInBackend(obj);
+      this.canvas.remove(obj);
+    });
+
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
+  }
+
+  private deleteShapeInBackend(fabricObj: fabric.Object) {
+    const id = fabricObj.get('id');
+    if(!id) return;
+
+    this.http.delete(`${this.baseUrl}/drawing/delete/${id}`, { responseType: 'text' })
+      .subscribe({
+        next: () => console.log(`Shape deleted (ID: ${id})`),
+        error: err => console.error('Failed to delete:', err)
+      });
+
+  }
+
+  duplicateSelected() {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+
+    this.http.post<ShapeDTO>(`http://localhost:8080/drawing/duplicate/${active.get('id')}`, {})
+      .subscribe({
+        next: (dto) => {
+          const newShape = this.createFabricObjectFromDTO(dto);
+          if (!newShape) return console.error('Failed to convert DTO to fabric object');
+          this.canvas.add(newShape);
+          this.canvas.setActiveObject(newShape);
+          this.canvas.requestRenderAll();
+        },
+        error: (err) => console.error('Duplication failed:', err)
+      });
+  }
+
 
   private saveStateToBackend() {
     // Don't save state during undo/redo operations
@@ -141,7 +189,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     // Listen for when free drawing path is created
     this.canvas.on('path:created', (e: any) => {
       if (e.path) {
-        this.saveShapeToBackend(e.path);
+        this.saveShapeInBackend(e.path);
       }
     });
 
@@ -159,19 +207,6 @@ export class Canvas implements AfterViewInit, OnChanges {
       this.saveStateToBackend();
     });
   }
-
-  private updateShapeInBackend(fabricObj: fabric.Object) {
-    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
-    if (!shapeDTO) {
-      console.error('Failed to convert fabric object to DTO');
-      return;
-    }
-    this.saveShapeToBackend(fabricObj);
-
-  }
-
-
-
 
 
   // ========================= TOOL MANAGEMENT =========================
@@ -262,7 +297,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       });
 
       // Save the shape to backend
-      this.saveShapeToBackend(this.drawingObject);
+      this.saveShapeInBackend(this.drawingObject);
     }
 
     this.drawingObject = null;
@@ -271,19 +306,33 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   // ================= SAVE/LOAD FABRIC JSON ==================
 
-  private saveShapeToBackend(fabricObj: fabric.Object) {
+  private updateShapeInBackend(fabricObj: fabric.Object) {
     const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
+    if (!shapeDTO) return console.error('Failed to convert fabric object to DTO');
 
-    if (!shapeDTO) {
-      console.error('Failed to convert fabric object to DTO');
-      return;
+    this.http.put(`${this.baseUrl}/drawing/update`, shapeDTO, { responseType: 'text' })
+      .subscribe({
+        next: (res) => console.log(`Shape updated in backend (ID: ${shapeDTO.id})`),
+        error: (err) => console.error('Failed to update shape:', err)
+      });
+  }
+
+
+  private saveShapeInBackend(fabricObj: fabric.Object) {
+    if (!fabricObj.get('id')) {
+      fabricObj.set('id', uuidv4());
     }
 
-    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO, { responseType: 'text' }).subscribe({
-      next: () => console.log('Shape saved to backend via Factory'),
-      error: (err) => console.error('Failed to save shape:', err)
-    });
+    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
+    if (!shapeDTO) return console.error('Failed to convert fabric object to DTO');
+
+    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO, { responseType: 'text' })
+      .subscribe({
+        next: () => console.log(`Shape saved (ID: ${shapeDTO.id})`),
+        error: (err) => console.error('Failed to save shape:', err)
+      });
   }
+
 
   loadShapesFromBackend() {
     this.http.get<any[]>(`${this.baseUrl}/drawing/all`).subscribe({
@@ -309,10 +358,9 @@ export class Canvas implements AfterViewInit, OnChanges {
     });
   }
 
-// convert ShapeDTO back to Fabric.js objects
+// convert ShapeDTO back to fabric objects
   private createFabricObjectFromDTO(dto: any): fabric.Object | null {
     const props = dto.properties || {};
-
     const commonProps = {
       stroke: props.strokeColor || '#000000',
       strokeWidth: props.strokeWidth || 2,
@@ -462,7 +510,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       selectable: false,
       evented: false
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 
@@ -497,7 +545,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       selectable: false,
       evented: false
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 
@@ -536,7 +584,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       selectable: false,
       evented: false
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 
@@ -565,7 +613,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       selectable: false,
       evented: false
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 
@@ -610,7 +658,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       originX: 'center',
       originY: 'center'
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 
@@ -653,7 +701,7 @@ export class Canvas implements AfterViewInit, OnChanges {
       selectable: false,
       evented: false
     });
-
+    this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
   }
 

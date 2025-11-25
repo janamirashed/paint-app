@@ -1,7 +1,9 @@
 package com.example.paintapp.controllers;
 
+import com.example.paintapp.dtos.ShapeFactory;
 import com.example.paintapp.services.DrawingService;
 import com.example.paintapp.services.ShapeDTO;
+import com.example.paintapp.shapes.base.Shape;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +27,15 @@ public class DrawingController {
     private DrawingService service;
 
     @PostMapping("/save-state")
-    public void saveState() {
-        service.saveState();
-
+    public ResponseEntity<String> saveState() {
+        try {
+            service.saveState();
+            return ResponseEntity.ok("State saved");
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error saving state: " + e.getMessage());
+        }
     }
 
     @PostMapping("/add")
@@ -42,6 +50,29 @@ public class DrawingController {
         }
     }
 
+    @PutMapping("/update")
+    public ResponseEntity<String> updateShape(@RequestBody ShapeDTO dto) {
+        try {
+            boolean updated = service.updateShape(dto);
+
+            if (updated) {
+                return ResponseEntity.ok("Shape updated successfully");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Shape not found");
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error updating shape: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/duplicate/{id}")
+    public ResponseEntity<ShapeDTO> duplicateShapeEndpoint(@PathVariable String id) {
+        ShapeDTO duplicateDTO = service.duplicateShape(id);
+        return ResponseEntity.ok(duplicateDTO);
+    }
 
     //Get all shapes from the canvas
     @GetMapping("/all")

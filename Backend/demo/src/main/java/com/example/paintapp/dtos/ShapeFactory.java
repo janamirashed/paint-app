@@ -18,6 +18,7 @@ public class ShapeFactory {
 
             case "circle":
                 shape = new Circle();
+
                 break;
 
             case "ellipse":
@@ -50,6 +51,7 @@ public class ShapeFactory {
         }
 
         // Set shared fields
+        shape.setId(dto.getId());
         shape.setType(dto.getType());
         shape.setX1(dto.getX1());
         shape.setY1(dto.getY1());
