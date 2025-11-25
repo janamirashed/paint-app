@@ -2,7 +2,10 @@ package com.example.paintapp.dtos;
 
 import com.example.paintapp.services.ShapeDTO;
 import com.example.paintapp.shapes.*;
+import com.example.paintapp.shapes.Rectangle;
 import com.example.paintapp.shapes.base.Shape;
+
+import java.awt.*;
 
 public class ShapeFactory {
 
@@ -12,43 +15,16 @@ public class ShapeFactory {
             throw new IllegalArgumentException("Invalid ShapeDTO");
         }
 
-        Shape shape;
-
-        switch (dto.getType().toLowerCase()) {
-
-            case "circle":
-                shape = new Circle();
-
-                break;
-
-            case "ellipse":
-                shape = new Ellipse();
-                break;
-
-            case "freehand":
-            case "path":
-                shape = new Freehand();
-                break;
-
-            case "line":
-                shape = new Line();
-                break;
-
-            case "rectangle":
-                shape = new Rectangle();
-                break;
-
-            case "square":
-                shape = new Square();
-                break;
-
-            case "triangle":
-                shape = new Triangle();
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown shape type: " + dto.getType());
-        }
+        Shape shape = switch (dto.getType().toLowerCase()){
+            case "circle" -> new Circle();
+            case "rectangle" -> new Rectangle();
+            case "square" -> new Square();
+            case "triangle" -> new Triangle();
+            case "line" -> new Line();
+            case "ellipse" -> new Ellipse();
+            case "freehand", "path" -> new Freehand();
+            default -> throw new IllegalArgumentException("Invalid shape type: " + dto.getType());
+        };
 
         // Set shared fields
         shape.setId(dto.getId());

@@ -33,28 +33,69 @@ export class HeaderToolbar {
     this.redoRequest.emit();
   }
 
-  saveJSON() {
+  async saveJSON() {
     if (!this.canvasComponent) {
       alert('Canvas not ready');
       return;
     }
 
-    // get entire canvas as JSON
-    const canvasJson = this.canvasComponent.getCanvasAsJSON();
-    const blob = new Blob([canvasJson], { type: 'application/json' });
-    this.downloadFile(blob, 'drawing.json');
+    try {
+      const canvasJson = this.canvasComponent.getCanvasAsJSON();
+
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: 'drawing.json',
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] }
+        }]
+      });
+
+      const writable = await handle.createWritable();
+      await writable.write(canvasJson);
+      await writable.close();
+
+      console.log('File saved successfully');
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error saving file:', error);
+        alert('Failed to save file');
+      }
+    }
   }
 
-  saveXML() {
-    this.httpService.exportXML().subscribe({
-      next: (blob) => {
-        this.downloadFile(blob, 'drawing.xml');
-      },
-      error: (err) => {
-        console.error('Error exporting XML:', err);
-        alert('Failed to export XML');
-      }
-    });
+  async saveXML() {
+    try {
+      this.httpService.exportXML().subscribe({
+        next: async (blob) => {
+          try {
+            const handle = await (window as any).showSaveFilePicker({
+              suggestedName: 'drawing.xml',
+              types: [{
+                description: 'XML Files',
+                accept: { 'application/xml': ['.xml'] }
+              }]
+            });
+
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+
+            console.log('XML file saved successfully');
+          } catch (error: any) {
+            if (error.name !== 'AbortError') {
+              console.error('Error saving XML:', error);
+              alert('Failed to save XML file');
+            }
+          }
+        },
+        error: (err) => {
+          console.error('Error exporting XML:', err);
+          alert('Failed to export XML');
+        }
+      });
+    } catch (error) {
+      console.error('Error:', error);
+    }
   }
 
   loadFile() {
