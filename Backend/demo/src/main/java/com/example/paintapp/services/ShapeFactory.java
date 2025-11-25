@@ -1,11 +1,8 @@
-package com.example.paintapp.dtos;
+package com.example.paintapp.services;
 
-import com.example.paintapp.services.ShapeDTO;
 import com.example.paintapp.shapes.*;
 import com.example.paintapp.shapes.Rectangle;
 import com.example.paintapp.shapes.base.Shape;
-
-import java.awt.*;
 
 public class ShapeFactory {
 

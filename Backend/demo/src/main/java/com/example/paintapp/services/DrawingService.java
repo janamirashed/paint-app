@@ -1,20 +1,18 @@
 package com.example.paintapp.services;
 
-import com.example.paintapp.dtos.ShapeFactory;
 import com.example.paintapp.shapes.base.Shape;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class DrawingService {
-    //to maintain insertion order and allow search by ID
-    private Map<String, Shape> shapes = new LinkedHashMap<>();
-    //private List<Shape> shapes = new ArrayList<>();
 
-    private Stack<Map<String, Shape>> undoStack = new Stack<>();
-    private Stack<Map<String, Shape>> redoStack = new Stack<>();
+    // LinkedHashMa to maintain insertion order and allow search by ID
+    private Map<String, Shape> shapes = new LinkedHashMap<>();
+
+    private final Stack<Map<String, Shape>> undoStack = new Stack<>();
+    private final Stack<Map<String, Shape>> redoStack = new Stack<>();
     private static final int MAX_HISTORY_SIZE = 50;
 
     public void saveState() {
@@ -40,7 +38,7 @@ public class DrawingService {
         }
 
         Shape shape = ShapeFactory.createShape(dto);
-        shape.setId(dto.getId());
+        //shape.setId(dto.getId());
         shapes.put(dto.getId(), shape);
 
         System.out.println("Shape added with ID: " + dto.getId());
