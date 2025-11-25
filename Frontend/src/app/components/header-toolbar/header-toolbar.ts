@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, Input, ViewChild } from '@angular/core';
 import { HttpService } from '../../services/http.service';
 import { Canvas } from '../canvas/canvas';
+import { LoadShapes } from '../../services/load-shapes';
 
 @Component({
   selector: 'app-header-toolbar',
@@ -17,11 +18,12 @@ export class HeaderToolbar {
   @Output() duplicateRequest = new EventEmitter<void>();
   @Input() canvasComponent?: Canvas;
 
-  constructor(private httpService: HttpService) {}
+  constructor(private httpService: HttpService , private load :LoadShapes ) {}
 
 
   deleteSelected() {
-    this.deleteRequest.emit();
+   this.deleteRequest.emit(); 
+
   }
   onUndoClick() {
     this.undoRequest.emit();
@@ -136,7 +138,7 @@ export class HeaderToolbar {
       JSON.parse(content);
 
       if (this.canvasComponent) {
-        this.canvasComponent.loadCanvasFromJSON(content);
+        this.load.loadCanvasFromJSON(this.canvasComponent.canvas,content);
 
         setTimeout(() => {
           if (this.canvasComponent?.canvas) {
@@ -174,7 +176,7 @@ export class HeaderToolbar {
         // Wait a bit for backend to process, then reload
         setTimeout(() => {
           if (this.canvasComponent) {
-            this.canvasComponent.loadShapesFromBackend();
+            this.load.loadShapesFromBackend(this.canvasComponent.canvas);
             alert('XML imported successfully!');
           }
         }, 100);

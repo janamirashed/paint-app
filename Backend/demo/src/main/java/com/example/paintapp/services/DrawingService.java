@@ -104,7 +104,7 @@ public class DrawingService {
 
         saveState();
         System.out.println("Shape duplicated: original=" + shapeId + ", clone=" + clone.getId());
-
+        
         return shapeToDTO(clone);
     }
 

@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ShapeFactory } from './shape-factory';
+import { UpdateShape } from './update-shape';
 
-describe('ShapeFactory', () => {
-  let service: ShapeFactory;
+describe('UpdateShape', () => {
+  let service: UpdateShape;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(ShapeFactory);
+    service = TestBed.inject(UpdateShape);
   });
 
   it('should be created', () => {

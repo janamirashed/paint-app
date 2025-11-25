@@ -7,12 +7,17 @@ import {
   OnChanges,
   SimpleChanges
 } from '@angular/core';
-
 import * as fabric from 'fabric';
 import {HttpClient} from '@angular/common/http';
 import { FabricToDtoService } from '../../services/fabric-to-dto';
 import { v4 as uuidv4 } from 'uuid';
 import {ShapeDTO} from '../../dtos/ShapeDTO';
+import { createFabricObjectService  } from '../../services/create-fabric-object';
+import { CanvasStatesService } from '../../services/canvas-states';
+import { DrawService } from '../../services/draw';
+import { UpdateShape } from '../../services/update-shape';
+import { LoadShapes } from '../../services/load-shapes';
+import { Delete } from '../../services/delete';
 @Component({
   selector: 'app-canvas',
   standalone: true,
@@ -20,6 +25,9 @@ import {ShapeDTO} from '../../dtos/ShapeDTO';
   styleUrl: './canvas.css'
 })
 export class Canvas implements AfterViewInit, OnChanges {
+  static canvas(canvas: any) {
+    throw new Error('Method not implemented.');
+  }
   @ViewChild('fabricCanvas', { static: true })
   canvasElement!: ElementRef<HTMLCanvasElement>;
 
@@ -34,10 +42,8 @@ export class Canvas implements AfterViewInit, OnChanges {
   };
 
   canvas!: fabric.Canvas;
-
   startX = 0;
   startY = 0;
-
   drawingObject: fabric.Object | null = null;
   isDrawing = false;
 
@@ -45,15 +51,21 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   constructor(
     private http: HttpClient,
-    private fabricToDtoService: FabricToDtoService
-  ) {}
+    private fabricToDtoService: FabricToDtoService,
+    private CFO : createFabricObjectService,
+    private canvasStates : CanvasStatesService,
+    private draw : DrawService,
+    private update : UpdateShape,
+    private load :LoadShapes,
+    private deleteService : Delete,
+  ){}
   private isUndoRedoOperation = false;
 
   undo() {
     this.http.post<any[]>(`${this.baseUrl}/drawing/undo`, {}).subscribe({
       next: (shapes) => {
         this.isUndoRedoOperation = true;
-        this.reloadCanvas(shapes);
+        this.canvasStates.reloadCanvas(this.canvas , shapes);
         this.isUndoRedoOperation = false;
       },
       error: (err) => console.error('Undo failed:', err)
@@ -63,64 +75,31 @@ export class Canvas implements AfterViewInit, OnChanges {
     this.http.post<any[]>(`${this.baseUrl}/drawing/redo`, {}).subscribe({
       next: (shapes) => {
         this.isUndoRedoOperation = true;
-        this.reloadCanvas(shapes);
+        this.canvasStates.reloadCanvas(this.canvas , shapes);
         this.isUndoRedoOperation = false;
       },
       error: (err) => console.error('Redo failed:', err)
     });
   }
 
-  private reloadCanvas(shapes: any[]) {
-    console.log('📥 RELOADING CANVAS with shapes:', shapes);
-    this.canvas.clear();
-    shapes.forEach(shapeDTO => {
-      try {
-        console.log('🔄 Creating shape from DTO:', shapeDTO);
-        const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
-        if (fabricObj) {
-          fabricObj.set('id', shapeDTO.id);
-          this.canvas.add(fabricObj);
+  ////////////
+deleteSelected() {
+      const objs = this.canvas.getActiveObjects();
+  
+      if (!objs || objs.length === 0) return;
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
+  
+      objs.forEach((obj: fabric.Object) => {
+        console.log('Deleting: '+obj.get('id'));
+        this.deleteShapeInBackend(obj);
+        this.canvas.remove(obj);
+      });
+  
+      this.canvas.discardActiveObject();
+      this.canvas.requestRenderAll();
+    }
 
-
-          console.log('✅ Created fabric object:', {
-            id: shapeDTO.id,
-            type: fabricObj.type,
-            left: fabricObj.left,
-            top: fabricObj.top,
-            scaleX: fabricObj.scaleX,
-            scaleY: fabricObj.scaleY,
-            angle: fabricObj.angle,
-            width: (fabricObj as any).width,
-            height: (fabricObj as any).height
-
-
-          });
-        }
-      } catch (error) {
-        console.error('Error creating shape from DTO:', error, shapeDTO);
-      }
-    });
-    this.canvas.renderAll();
-  }
-
-
-  deleteSelected() {
-    const objs = this.canvas.getActiveObjects();
-
-    if (!objs || objs.length === 0) return;
-    this.saveStateToBackend();
-
-    objs.forEach((obj: fabric.Object) => {
-      console.log('Deleting: '+obj.get('id'));
-      this.deleteShapeInBackend(obj);
-      this.canvas.remove(obj);
-    });
-
-    this.canvas.discardActiveObject();
-    this.canvas.requestRenderAll();
-  }
-
-  private deleteShapeInBackend(fabricObj: fabric.Object) {
+   public deleteShapeInBackend(fabricObj: fabric.Object) {
     const id = fabricObj.get('id');
     if(!id) return;
 
@@ -131,41 +110,33 @@ export class Canvas implements AfterViewInit, OnChanges {
       });
 
   }
+  
 
   duplicateSelected() {
-    const active = this.canvas.getActiveObject();
-    if (!active) return;
+    const selectedObjects = this.canvas.getActiveObjects();
+    if (!selectedObjects || selectedObjects.length === 0) return;
 
-    this.http.post<ShapeDTO>(`${this.baseUrl}/drawing/duplicate/${active.get('id')}`, {})
-      .subscribe({
-        next: (dto) => {
-          const newShape = this.createFabricObjectFromDTO(dto);
-          if (!newShape) return console.error('Failed to convert DTO to fabric object');
-          this.canvas.add(newShape);
-          this.canvas.setActiveObject(newShape);
-          this.canvas.requestRenderAll();
-        },
-        error: (err) => console.error('Duplication failed:', err)
-      });
+    selectedObjects.forEach(active => {
+      const id = active.get('id');
+      if (!id) return;
+
+      this.http.post<ShapeDTO>(`${this.baseUrl}/drawing/duplicate/${id}`, {})
+        .subscribe({
+          next: (dto) => {
+            const newShape = this.CFO.createFabricObjectFromDTO(dto);
+            if (!newShape) return console.error('Failed to convert DTO to fabric object');
+
+            this.canvas.add(newShape);
+
+            this.canvas.setActiveObject(newShape);
+            this.canvas.requestRenderAll();
+          },
+          error: (err) => console.error('Duplication failed:', err)
+        });
+    });
+
+    this.canvas.discardActiveObject();
   }
-
-
-  private saveStateToBackend() {
-    // Don't save state during undo/redo operations
-    if (this.isUndoRedoOperation) return;
-
-    this.http.post(`${this.baseUrl}/drawing/save-state`, {}, { responseType: 'text' })
-      .subscribe({
-        next: (res) => {
-          console.log('State saved:', res);
-        },
-        error: (err) => {
-          // Only real HTTP errors will trigger this
-          console.error('Failed to save state:', err);
-        }
-      });
-  }
-
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
       selection: true
@@ -174,7 +145,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     this.attachFabricEvents();
     this.handleToolChange();
-    this.loadShapesFromBackend();
+    this.load.loadShapesFromBackend(this.canvas);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -207,25 +178,24 @@ export class Canvas implements AfterViewInit, OnChanges {
     // Listen for when free drawing path is created
     this.canvas.on('path:created', (e: any) => {
       if (e.path) {
-        this.saveShapeInBackend(e.path);
+        this.update.saveShapeInBackend(e.path);
       }
     });
 
     // Track object modifications (move, scale, rotate)
     this.canvas.on('object:modified', (e: any) => {
       if (e.target && !this.isUndoRedoOperation) {
-        this.saveStateToBackend();
+        this.update.saveStateToBackend(this.isUndoRedoOperation);
         // Update the modified object in backend
-        this.updateShapeInBackend(e.target);
+        this.update.updateShapeInBackend(e.target);
       }
     });
     // Track selection changes for property updates
     this.canvas.on('selection:created', () => {
       // save state on select ( before user modifies )
-      this.saveStateToBackend();
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
     });
   }
-
 
   // ========================= TOOL MANAGEMENT =========================
 
@@ -258,14 +228,12 @@ export class Canvas implements AfterViewInit, OnChanges {
   }
 
   // ========================= LOGIC ==========================
-
   handleMouseDown(e: fabric.TEvent) {
     // For freehand/pencil, let fabric handle it
     if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
-      this.saveStateToBackend();
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
       return;
     }
-
     const pointer = this.canvas.getPointer(e.e);
     this.startX = pointer.x;
     this.startY = pointer.y;
@@ -277,25 +245,42 @@ export class Canvas implements AfterViewInit, OnChanges {
       this.canvas.discardActiveObject();
       this.canvas.renderAll();
 
-      this.saveStateToBackend();
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
     }
-
-    if (this.activeTool === 'rectangle') this.startRectangle();
-    else if (this.activeTool === 'ellipse') this.startEllipse();
+    if (this.activeTool === 'rectangle'){ 
+      this.drawingObject = this.draw.startRectangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+      this.drawingObject.set('id', uuidv4());
+      this.canvas.add(this.drawingObject);
+    }
+    else if (this.activeTool === 'ellipse'){ 
+      this.drawingObject = this.draw.startEllipse(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+      this.drawingObject.set('id', uuidv4());
+      this.canvas.add(this.drawingObject);
+    }
     else if (this.activeTool === 'line') this.startLine(pointer);
-    else if (this.activeTool === 'square') this.startSquare();
-    else if (this.activeTool === 'circle') this.startCircle();
-    else if (this.activeTool === 'triangle') this.startTriangle();
+    else if (this.activeTool === 'square'){
+      this.drawingObject = this.draw.startSquare(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+      this.drawingObject.set('id', uuidv4());
+      this.canvas.add(this.drawingObject);
+    }
+    else if (this.activeTool === 'circle'){ 
+      this.drawingObject = this.draw.startCircle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+      this.drawingObject.set('id', uuidv4());
+          this.canvas.add(this.drawingObject);
+    }
+    else if (this.activeTool === 'triangle'){ 
+      this.drawingObject = this.draw.startTriangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+      this.drawingObject.set('id', uuidv4());
+      this.canvas.add(this.drawingObject);
+    }
     else if (this.activeTool === 'select') {
       // Ensure we're not in drawing mode for select tool
       this.canvas.isDrawingMode = false;
       this.canvas.selection = true;
     }
   }
-
   handleMouseMove(e: fabric.TEvent) {
     if (!this.isDrawing || !this.drawingObject) return;
-
     const pointer = this.canvas.getPointer(e.e);
 
     if (this.activeTool === 'rectangle') this.resizeRectangle(pointer);
@@ -315,194 +300,11 @@ export class Canvas implements AfterViewInit, OnChanges {
       });
 
       // Save the shape to backend
-      this.saveShapeInBackend(this.drawingObject);
+      this.update.saveShapeInBackend(this.drawingObject);
     }
-
     this.drawingObject = null;
     this.isDrawing = false;
   }
-
-  // ================= SAVE/LOAD FABRIC JSON ==================
-
-  private updateShapeInBackend(fabricObj: fabric.Object) {
-    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
-    if (!shapeDTO) return console.error('Failed to convert fabric object to DTO');
-
-    //for debugging
-    console.log('📤 SENDING UPDATE:', {
-      id: shapeDTO.id,
-      type: shapeDTO.type,
-      bounds: { x1: shapeDTO.x1, y1: shapeDTO.y1, x2: shapeDTO.x2, y2: shapeDTO.y2 },
-      properties: shapeDTO.properties,
-      fabricObject: {
-        left: fabricObj.left,
-        top: fabricObj.top,
-        scaleX: fabricObj.scaleX,
-        scaleY: fabricObj.scaleY,
-        angle: fabricObj.angle,
-        width: (fabricObj as any).width,
-        height: (fabricObj as any).height
-      }
-
-    });
-    this.http.put(`${this.baseUrl}/drawing/update`, shapeDTO, { responseType: 'text' })
-      .subscribe({
-        next: (res) => console.log(`Shape updated in backend (ID: ${shapeDTO.id})`),
-        error: (err) => console.error('Failed to update shape:', err)
-      });
-  }
-
-
-  private saveShapeInBackend(fabricObj: fabric.Object) {
-    if (!fabricObj.get('id')) {
-      fabricObj.set('id', uuidv4());
-    }
-
-    const shapeDTO = this.fabricToDtoService.convertToDTO(fabricObj);
-    if (!shapeDTO) return console.error('Failed to convert fabric object to DTO');
-
-    this.http.post(`${this.baseUrl}/drawing/add`, shapeDTO, { responseType: 'text' })
-      .subscribe({
-        next: () => console.log(`Shape saved (ID: ${shapeDTO.id})`),
-        error: (err) => console.error('Failed to save shape:', err)
-      });
-  }
-
-
-  loadShapesFromBackend() {
-    this.http.get<any[]>(`${this.baseUrl}/drawing/all`).subscribe({
-      next: (shapes) => {
-        console.log('Loaded shapes from backend:', shapes);
-        this.canvas.clear();
-
-        shapes.forEach(shapeDTO => {
-          try {
-            // Convert ShapeDTO to Fabric.js object
-            const fabricObj = this.createFabricObjectFromDTO(shapeDTO);
-            if (fabricObj) {
-              this.canvas.add(fabricObj);
-            }
-          } catch (error) {
-            console.error('Error creating shape from DTO:', error, shapeDTO);
-          }
-        });
-
-        this.canvas.renderAll();
-      },
-      error: (err) => console.error('Error loading shapes:', err)
-    });
-  }
-
-// convert ShapeDTO back to fabric objects
-  private createFabricObjectFromDTO(dto: any): fabric.Object | null {
-    const props = dto.properties || {};
-    const commonProps = {
-      stroke: props.strokeColor || '#000000',
-      strokeWidth: props.strokeWidth || 2,
-      strokeDashArray: props.lineStyle === 'dashed' ? [10, 10] : [],
-      fill: props.fillColor || 'transparent',
-      opacity: props.opacity || 1,
-      angle: dto.angle || 0,
-      scaleX: dto.scaleX || 1,
-      scaleY: dto.scaleY || 1,
-      left: props.left || dto.x1,
-      top: props.top || dto.y1,
-      selectable: true,
-      id: dto.id,
-      evented: true
-    };
-
-    let obj: fabric.Object | null = null;
-
-    switch(dto.type.toLowerCase()) {
-      case 'rectangle':
-      case 'square':
-        obj = new fabric.Rect({
-          width: props.width ||Math.abs(dto.x2 - dto.x1),
-          height: props.height || Math.abs(dto.y2 - dto.y1),
-          ...commonProps
-        });
-        break;
-
-      case 'circle':
-        const radius = props.radius || Math.abs(dto.x2 - dto.x1) / 2;
-        obj = new fabric.Circle({
-          radius: radius,
-          originX: 'center',
-          originY: 'center',
-          ...commonProps
-        });
-        break;
-
-      case 'ellipse':
-        obj = new fabric.Ellipse({
-          rx: props.rx || Math.abs(dto.x2 - dto.x1) / 2,
-          ry: props.ry || Math.abs(dto.y2 - dto.y1) / 2,
-          originX: 'center',
-          originY: 'center',
-          ...commonProps
-        });
-        break;
-
-      case 'line':
-        obj = new fabric.Line(
-          [dto.x1, dto.y1, dto.x2, dto.y2],
-          {
-            ...commonProps,
-            fill: undefined
-          }
-        );
-        break;
-
-      case 'triangle':
-        const triWidth = Math.abs(dto.x2 - dto.x1);
-        const triHeight = Math.abs(dto.y2 - dto.y1);
-        obj = new fabric.Triangle({
-          width: props.width || triWidth,
-          height: props.height || triHeight,
-          ...commonProps
-        });
-        break;
-
-      case 'freehand':
-      case 'path':
-        if (props.path) {
-          try {
-            let pathString = '';
-
-            if (typeof props.path === 'string') {
-              pathString = props.path;
-            } else if (Array.isArray(props.path)) {
-              pathString = props.path.join(' ');
-            }
-
-            if (pathString) {
-              obj = new fabric.Path(pathString, {
-                ...commonProps,
-                fill: undefined
-              });
-            }
-          } catch (error) {
-            console.error('Error creating path from DTO:', error, props.path);
-          }
-        }
-        break;
-    }
-
-    return obj;
-  }
-  // Load entire canvas from JSON (for file import)
-  loadCanvasFromJSON(jsonString: string) {
-    try {
-      this.canvas.loadFromJSON(jsonString, () => {
-        this.canvas.renderAll();
-        console.log('Canvas loaded from JSON');
-      });
-    } catch (error) {
-      console.error('Error loading canvas from JSON:', error);
-    }
-  }
-
   // Get entire canvas as JSON (for file export)
   getCanvasAsJSON(): string {
     return JSON.stringify(this.canvas.toJSON());
@@ -510,36 +312,14 @@ export class Canvas implements AfterViewInit, OnChanges {
 
   // Clear canvas and backend
   clearCanvas() {
-    this.saveStateToBackend();
+    this.update.saveStateToBackend(this.isUndoRedoOperation);
     this.canvas.clear();
-    this.http.delete(`${this.baseUrl}/drawing/clear`).subscribe({
+    this.http.delete(`${this.baseUrl}/drawing/clear`,{responseType : 'text'}).subscribe({
       next: () => console.log('Canvas cleared'),
       error: (err) => console.error('Error clearing canvas:', err)
     });
   }
-
   // ================= RECTANGLE ==================
-
-  startRectangle() {
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-
-    this.drawingObject = new fabric.Rect({
-      left: this.startX,
-      top: this.startY,
-      width: 1,
-      height: 1,
-      stroke: this.currentProperties.strokeColor,
-      strokeWidth: this.currentProperties.strokeWidth,
-      fill: this.currentProperties.fillColor,
-      opacity: this.currentProperties.opacity,
-      selectable: false,
-      evented: false
-    });
-    this.drawingObject.set('id', uuidv4());
-    this.canvas.add(this.drawingObject);
-  }
-
   resizeRectangle(pointer: fabric.Point) {
     const rect = this.drawingObject as fabric.Rect;
 
@@ -552,29 +332,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     this.canvas.renderAll();
   }
-
   // ================= ELLIPSE ==================
-
-  startEllipse() {
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-
-    this.drawingObject = new fabric.Ellipse({
-      left: this.startX,
-      top: this.startY,
-      rx: 1,
-      ry: 1,
-      stroke: this.currentProperties.strokeColor,
-      strokeWidth: this.currentProperties.strokeWidth,
-      fill: this.currentProperties.fillColor,
-      opacity: this.currentProperties.opacity,
-      selectable: false,
-      evented: false
-    });
-    this.drawingObject.set('id', uuidv4());
-    this.canvas.add(this.drawingObject);
-  }
-
   resizeEllipse(pointer: fabric.Point) {
     const ellipse = this.drawingObject as fabric.Ellipse;
 
@@ -589,7 +347,6 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     this.canvas.renderAll();
   }
-
   // ================= LINE ==================
 
   startLine(pointer: fabric.Point) {
@@ -622,27 +379,6 @@ export class Canvas implements AfterViewInit, OnChanges {
   }
 
   // ================= SQUARE ==================
-
-  startSquare() {
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-
-    this.drawingObject = new fabric.Rect({
-      left: this.startX,
-      top: this.startY,
-      width: 1,
-      height: 1,
-      stroke: this.currentProperties.strokeColor,
-      strokeWidth: this.currentProperties.strokeWidth,
-      fill: this.currentProperties.fillColor,
-      opacity: this.currentProperties.opacity,
-      selectable: false,
-      evented: false
-    });
-    this.drawingObject.set('id', uuidv4());
-    this.canvas.add(this.drawingObject);
-  }
-
   resizeSquare(pointer: fabric.Point) {
     const square = this.drawingObject as fabric.Rect;
 
@@ -666,28 +402,6 @@ export class Canvas implements AfterViewInit, OnChanges {
   }
 
   // ================= CIRCLE ==================
-
-  startCircle() {
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-
-    this.drawingObject = new fabric.Circle({
-      left: this.startX,
-      top: this.startY,
-      radius: 1,
-      stroke: this.currentProperties.strokeColor,
-      strokeWidth: this.currentProperties.strokeWidth,
-      fill: this.currentProperties.fillColor,
-      opacity: this.currentProperties.opacity,
-      selectable: false,
-      evented: false,
-      originX: 'center',
-      originY: 'center'
-    });
-    this.drawingObject.set('id', uuidv4());
-    this.canvas.add(this.drawingObject);
-  }
-
   resizeCircle(pointer: fabric.Point) {
     const circle = this.drawingObject as fabric.Circle;
 
@@ -708,29 +422,7 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     this.canvas.renderAll();
   }
-
   // ================= TRIANGLE ==================
-
-  startTriangle() {
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-
-    this.drawingObject = new fabric.Triangle({
-      left: this.startX,
-      top: this.startY,
-      width: 1,
-      height: 1,
-      stroke: this.currentProperties.strokeColor,
-      strokeWidth: this.currentProperties.strokeWidth,
-      fill: this.currentProperties.fillColor,
-      opacity: this.currentProperties.opacity,
-      selectable: false,
-      evented: false
-    });
-    this.drawingObject.set('id', uuidv4());
-    this.canvas.add(this.drawingObject);
-  }
-
   resizeTriangle(pointer: fabric.Point) {
     const triangle = this.drawingObject as fabric.Triangle;
 
@@ -746,20 +438,6 @@ export class Canvas implements AfterViewInit, OnChanges {
 
     this.canvas.renderAll();
   }
-
-  // ================= PENCIL ==================
-
-  /* enableFreeDrawing() {
-    this.canvas.isDrawingMode = true;
-    this.canvas.selection = false;
-    this.canvas.discardActiveObject();
-
-    if (this.canvas.freeDrawingBrush) {
-      this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
-      this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
-    }
-  } */
-
   // ================= PROPERTIES ==================
 
   applyPropertiesToSelectedObject() {
@@ -767,34 +445,29 @@ export class Canvas implements AfterViewInit, OnChanges {
     if (!activeObject) return;
 
     if (!this.isUndoRedoOperation) {
-      this.saveStateToBackend();
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
     }
 
     const updates: any = {};
-
     // Apply stroke width
     if (this.currentProperties.strokeWidth !== undefined) {
       updates.strokeWidth = this.currentProperties.strokeWidth;
     }
-
     // Apply stroke color
     if (this.currentProperties.strokeColor !== undefined) {
       updates.stroke = this.currentProperties.strokeColor;
     }
-
     // Apply fill color (only if the object supports fill)
     if (this.currentProperties.fillColor !== undefined && activeObject.type !== 'line') {
       updates.fill = this.currentProperties.fillColor;
     }
-
     // Apply opacity
     if (this.currentProperties.opacity !== undefined) {
       updates.opacity = this.currentProperties.opacity;
     }
-
     activeObject.set(updates);
     this.canvas.renderAll();
-    this.updateShapeInBackend(activeObject);
+    this.update.updateShapeInBackend(activeObject);
   }
 
 }

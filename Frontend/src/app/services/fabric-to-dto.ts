@@ -136,4 +136,15 @@ export class FabricToDtoService {
 
     return props;
   }
+
+  private pathArrayToString(pathArray: any): string {
+    if (!pathArray || !Array.isArray(pathArray)) {
+      return '';
+    }
+
+    return pathArray.map(segment => {
+      if (!Array.isArray(segment)) return '';
+      return segment.join(' ');
+    }).join(' ');
+  }
 }

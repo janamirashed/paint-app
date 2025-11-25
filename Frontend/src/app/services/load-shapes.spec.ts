@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { Tool } from './tool';
+import { LoadShapes } from './load-shapes';
 
-describe('Tool', () => {
-  let service: Tool;
+describe('LoadShapes', () => {
+  let service: LoadShapes;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(Tool);
+    service = TestBed.inject(LoadShapes);
   });
 
   it('should be created', () => {

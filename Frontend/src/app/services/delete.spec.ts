@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { UndoRedo } from './undo-redo';
+import { Delete } from './delete';
 
-describe('UndoRedo', () => {
-  let service: UndoRedo;
+describe('Delete', () => {
+  let service: Delete;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(UndoRedo);
+    service = TestBed.inject(Delete);
   });
 
   it('should be created', () => {
