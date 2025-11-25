@@ -1,9 +1,7 @@
 package com.example.paintapp.controllers;
 
-import com.example.paintapp.dtos.ShapeFactory;
 import com.example.paintapp.services.DrawingService;
 import com.example.paintapp.services.ShapeDTO;
-import com.example.paintapp.shapes.base.Shape;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

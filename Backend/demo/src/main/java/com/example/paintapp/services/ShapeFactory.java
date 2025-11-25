@@ -1,11 +1,8 @@
-package com.example.paintapp.dtos;
+package com.example.paintapp.services;
 
-import com.example.paintapp.services.ShapeDTO;
 import com.example.paintapp.shapes.*;
 import com.example.paintapp.shapes.Rectangle;
 import com.example.paintapp.shapes.base.Shape;
-
-import java.awt.*;
 
 public class ShapeFactory {
 
@@ -33,16 +30,19 @@ public class ShapeFactory {
         shape.setY1(dto.getY1());
         shape.setX2(dto.getX2());
         shape.setY2(dto.getY2());
+        shape.setAngle(dto.getAngle());
+        shape.setScaleX(dto.getScaleX());
+        shape.setScaleY(dto.getScaleY());
 
-        if (dto.getAngle() != null) {
-            shape.setAngle(dto.getAngle());
-        }
-        if (dto.getScaleX() != null) {
-            shape.setScaleX(dto.getScaleX());
-        }
-        if (dto.getScaleY() != null) {
-            shape.setScaleY(dto.getScaleY());
-        }
+//        if (dto.getAngle() != null) {
+//            shape.setAngle(dto.getAngle());
+//        }
+//        if (dto.getScaleX() != null) {
+//            shape.setScaleX(dto.getScaleX());
+//        }
+//        if (dto.getScaleY() != null) {
+//            shape.setScaleY(dto.getScaleY());
+//        }
 
         // Set all extra properties (radius, width, height, etc.)
         if (dto.getProperties() != null) {

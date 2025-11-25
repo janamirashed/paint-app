@@ -15,16 +15,16 @@ public abstract class Shape implements Cloneable{
 
     protected Map<String, Object> properties = new HashMap<>();
 
-    public void move(double dx, double dy){
-        this.x1 += dx;
-        this.y1 += dy;
-    }
+
     public void setProperties(Map<String, Object> props){
         if(props!=null){
             this.properties.putAll(props);
         }
     }
-
+    //    public void move(double dx, double dy){
+//        this.x1 += dx;
+//        this.y1 += dy;
+//    }
     public Map<String, Object> getProperties(){
         return new HashMap<>(this.properties);
     }

@@ -20,15 +20,15 @@ public class Freehand extends Shape {
         points.add(new Point(x, y));
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public void move(double dx, double dy) {
-        List<Point> points = (List<Point>) this.properties.get("points");
-        for (Point p : points) {
-            p.x += dx;
-            p.y += dy;
-        }
-    }
+//    @Override
+//    @SuppressWarnings("unchecked")
+//    public void move(double dx, double dy) {
+//        List<Point> points = (List<Point>) this.properties.get("points");
+//        for (Point p : points) {
+//            p.x += dx;
+//            p.y += dy;
+//        }
+//    }
 
     @Override
     public Shape clone() {
