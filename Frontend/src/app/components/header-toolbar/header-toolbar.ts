@@ -5,6 +5,7 @@ import { LoadShapes } from '../../services/load-shapes';
 
 @Component({
   selector: 'app-header-toolbar',
+  standalone: true,
   imports: [],
   templateUrl: './header-toolbar.html',
   styleUrl: './header-toolbar.css',
