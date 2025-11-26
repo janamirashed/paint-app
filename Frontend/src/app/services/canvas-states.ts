@@ -8,7 +8,7 @@ export class CanvasStatesService {
   constructor(private CFO: createFabricObjectService) {}
 
   public reloadCanvas(canvas: fabric.Canvas, shapes: any[]) {
-    console.log('📥 RELOADING CANVAS with shapes:', shapes);
+    console.log(' RELOADING CANVAS with shapes:', shapes);
     canvas.clear();
     shapes.forEach((shapeDTO) => {
       try {
@@ -18,7 +18,7 @@ export class CanvasStatesService {
           fabricObj.set('id', shapeDTO.id);
           canvas.add(fabricObj);
 
-          console.log('✅ Created fabric object:', {
+          console.log(' Created fabric object:', {
             id: shapeDTO.id,
             type: fabricObj.type,
             left: fabricObj.left,
@@ -38,5 +38,5 @@ export class CanvasStatesService {
   }
 
 
-  
+
 }

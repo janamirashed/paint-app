@@ -5,24 +5,24 @@ import {
   ElementRef,
   Input,
   OnChanges,
-  SimpleChanges
+  SimpleChanges,
 } from '@angular/core';
 import * as fabric from 'fabric';
-import {HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { FabricToDtoService } from '../../services/fabric-to-dto';
 import { v4 as uuidv4 } from 'uuid';
-import {ShapeDTO} from '../../dtos/ShapeDTO';
-import { createFabricObjectService  } from '../../services/create-fabric-object';
+import { ShapeDTO } from '../../dtos/ShapeDTO';
+import { createFabricObjectService } from '../../services/create-fabric-object';
 import { CanvasStatesService } from '../../services/canvas-states';
 import { DrawService } from '../../services/draw';
 import { UpdateShape } from '../../services/update-shape';
 import { LoadShapes } from '../../services/load-shapes';
-import { Delete } from '../../services/delete';
+
 @Component({
   selector: 'app-canvas',
   standalone: true,
   templateUrl: './canvas.html',
-  styleUrl: './canvas.css'
+  styleUrl: './canvas.css',
 })
 export class Canvas implements AfterViewInit, OnChanges {
   static canvas(canvas: any) {
@@ -38,7 +38,7 @@ export class Canvas implements AfterViewInit, OnChanges {
     strokeColor: '#000000',
     fillColor: 'transparent',
     opacity: 1,
-    lineStyle: 'solid'
+    lineStyle: 'solid',
   };
 
   canvas!: fabric.Canvas;
@@ -52,94 +52,89 @@ export class Canvas implements AfterViewInit, OnChanges {
   constructor(
     private http: HttpClient,
     private fabricToDtoService: FabricToDtoService,
-    private CFO : createFabricObjectService,
-    private canvasStates : CanvasStatesService,
-    private draw : DrawService,
-    private update : UpdateShape,
-    private load :LoadShapes,
-    private deleteService : Delete,
-  ){}
+    private CFO: createFabricObjectService,
+    private canvasStates: CanvasStatesService,
+    private draw: DrawService,
+    private update: UpdateShape,
+    private load: LoadShapes,
+  
+  ) {}
   private isUndoRedoOperation = false;
 
   undo() {
     this.http.post<any[]>(`${this.baseUrl}/drawing/undo`, {}).subscribe({
       next: (shapes) => {
         this.isUndoRedoOperation = true;
-        this.canvasStates.reloadCanvas(this.canvas , shapes);
+        this.canvasStates.reloadCanvas(this.canvas, shapes);
         this.isUndoRedoOperation = false;
       },
-      error: (err) => console.error('Undo failed:', err)
+      error: (err) => console.error('Undo failed:', err),
     });
   }
   redo() {
     this.http.post<any[]>(`${this.baseUrl}/drawing/redo`, {}).subscribe({
       next: (shapes) => {
         this.isUndoRedoOperation = true;
-        this.canvasStates.reloadCanvas(this.canvas , shapes);
+        this.canvasStates.reloadCanvas(this.canvas, shapes);
         this.isUndoRedoOperation = false;
       },
-      error: (err) => console.error('Redo failed:', err)
+      error: (err) => console.error('Redo failed:', err),
     });
   }
 
-  ////////////
-deleteSelected() {
-      const objs = this.canvas.getActiveObjects();
+  deleteSelected() {
+    const objs = this.canvas.getActiveObjects();
 
-      if (!objs || objs.length === 0) return;
-      this.update.saveStateToBackend(this.isUndoRedoOperation);
+    if (!objs || objs.length === 0) return;
+    this.update.saveStateToBackend(this.isUndoRedoOperation);
 
-      objs.forEach((obj: fabric.Object) => {
-        console.log('Deleting: '+obj.get('id'));
-        this.deleteShapeInBackend(obj);
-        this.canvas.remove(obj);
-      });
+    objs.forEach((obj: fabric.Object) => {
+      console.log('Deleting: ' + obj.get('id'));
+      this.deleteShapeInBackend(obj);
+      this.canvas.remove(obj);
+    });
 
-      this.canvas.discardActiveObject();
-      this.canvas.requestRenderAll();
-    }
-
-   public deleteShapeInBackend(fabricObj: fabric.Object) {
-    const id = fabricObj.get('id');
-    if(!id) return;
-
-    this.http.delete(`${this.baseUrl}/drawing/delete/${id}`, { responseType: 'text' })
-      .subscribe({
-        next: () => console.log(`Shape deleted (ID: ${id})`),
-        error: err => console.error('Failed to delete:', err)
-      });
-
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
   }
 
+  public deleteShapeInBackend(fabricObj: fabric.Object) {
+    const id = fabricObj.get('id');
+    if (!id) return;
+
+    this.http.delete(`${this.baseUrl}/drawing/delete/${id}`, { responseType: 'text' }).subscribe({
+      next: () => console.log(`Shape deleted (ID: ${id})`),
+      error: (err) => console.error('Failed to delete:', err),
+    });
+  }
 
   duplicateSelected() {
     const selectedObjects = this.canvas.getActiveObjects();
     if (!selectedObjects || selectedObjects.length === 0) return;
 
-    selectedObjects.forEach(active => {
+    selectedObjects.forEach((active) => {
       const id = active.get('id');
       if (!id) return;
 
-      this.http.post<ShapeDTO>(`${this.baseUrl}/drawing/duplicate/${id}`, {})
-        .subscribe({
-          next: (dto) => {
-            const newShape = this.CFO.createFabricObjectFromDTO(dto);
-            if (!newShape) return console.error('Failed to convert DTO to fabric object');
+      this.http.post<ShapeDTO>(`${this.baseUrl}/drawing/duplicate/${id}`, {}).subscribe({
+        next: (dto) => {
+          const newShape = this.CFO.createFabricObjectFromDTO(dto);
+          if (!newShape) return console.error('Failed to convert DTO to fabric object');
 
-            this.canvas.add(newShape);
+          this.canvas.add(newShape);
 
-            this.canvas.setActiveObject(newShape);
-            this.canvas.requestRenderAll();
-          },
-          error: (err) => console.error('Duplication failed:', err)
-        });
+          this.canvas.setActiveObject(newShape);
+          this.canvas.requestRenderAll();
+        },
+        error: (err) => console.error('Duplication failed:', err),
+      });
     });
 
     this.canvas.discardActiveObject();
   }
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas(this.canvasElement.nativeElement, {
-      selection: true
+      selection: true,
     });
     this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
 
@@ -151,16 +146,16 @@ deleteSelected() {
   ngOnChanges(changes: SimpleChanges) {
     if (!this.canvas) return;
 
-    // Handle tool changes - check both if it changed AND if it exists (for initial load)
+    
     if (changes['activeTool']) {
       this.handleToolChange();
     }
 
-    // Handle property changes for selected objects
+    
     if (changes['currentProperties']) {
       this.applyPropertiesToSelectedObject();
 
-      // Also update brush properties if in drawing mode
+      
       if (this.canvas.isDrawingMode && this.canvas.freeDrawingBrush) {
         this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
         this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
@@ -168,14 +163,14 @@ deleteSelected() {
     }
   }
 
-  // ========================= EVENTS =========================
+  
 
   attachFabricEvents() {
     this.canvas.on('mouse:down', (e) => this.handleMouseDown(e));
     this.canvas.on('mouse:move', (e) => this.handleMouseMove(e));
     this.canvas.on('mouse:up', () => this.handleMouseUp());
 
-    // Listen for when free drawing path is created
+    
     this.canvas.on('path:created', (e: any) => {
       if (e.path) {
         this.update.saveShapeInBackend(e.path);
@@ -185,25 +180,25 @@ deleteSelected() {
     this.canvas.on('object:modified', (e: any) => {
       const objs = this.canvas.getActiveObjects();
       if (!objs || objs.length === 0) return;
-        this.update.saveStateToBackend(this.isUndoRedoOperation);
+      this.update.saveStateToBackend(this.isUndoRedoOperation);
 
       objs.forEach((obj: fabric.Object) => {
-        console.log('Updating: '+obj.get('id'));
+        console.log('Updating: ' + obj.get('id'));
         this.update.updateShapeInBackend(obj);
       });
-      //this.canvas.discardActiveObject();
+      
       this.canvas.requestRenderAll();
     });
   }
 
-  // ========================= TOOL MANAGEMENT =========================
+  
 
   handleToolChange() {
-    // Deselect any active objects when switching tools
+    
     this.canvas.discardActiveObject();
     this.canvas.renderAll();
 
-    // Reset drawing mode and selection based on active tool
+    
     if (this.activeTool === 'select') {
       this.canvas.isDrawingMode = false;
       this.canvas.selection = true;
@@ -213,7 +208,7 @@ deleteSelected() {
       this.canvas.defaultCursor = 'crosshair';
       this.canvas.isDrawingMode = true;
 
-      // Configure brush - make sure it exists
+      
       if (this.canvas.freeDrawingBrush) {
         this.canvas.freeDrawingBrush.color = this.currentProperties.strokeColor;
         this.canvas.freeDrawingBrush.width = this.currentProperties.strokeWidth;
@@ -226,7 +221,7 @@ deleteSelected() {
     }
   }
 
-  // ========================= LOGIC ==========================
+  
   handleMouseDown(e: fabric.TEvent) {
     // For freehand/pencil, let fabric handle it
     if (this.activeTool === 'pencil' || this.activeTool === 'freehand') {
@@ -238,7 +233,7 @@ deleteSelected() {
     this.startY = pointer.y;
     this.isDrawing = true;
 
-    // Disable selection while drawing any shape
+    
     if (this.activeTool !== 'select') {
       this.canvas.selection = false;
       this.canvas.discardActiveObject();
@@ -246,33 +241,58 @@ deleteSelected() {
 
       this.update.saveStateToBackend(this.isUndoRedoOperation);
     }
-    if (this.activeTool === 'rectangle'){
-      this.drawingObject = this.draw.startRectangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+    if (this.activeTool === 'rectangle') {
+      this.drawingObject = this.draw.startRectangle(
+        this.canvas,
+        this.drawingObject,
+        this.startX,
+        this.startY,
+        this.currentProperties
+      );
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
-    }
-    else if (this.activeTool === 'ellipse'){
-      this.drawingObject = this.draw.startEllipse(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+    } else if (this.activeTool === 'ellipse') {
+      this.drawingObject = this.draw.startEllipse(
+        this.canvas,
+        this.drawingObject,
+        this.startX,
+        this.startY,
+        this.currentProperties
+      );
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
-    }
-    else if (this.activeTool === 'line') this.startLine(pointer);
-    else if (this.activeTool === 'square'){
-      this.drawingObject = this.draw.startSquare(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+    } else if (this.activeTool === 'line') this.startLine(pointer);
+    else if (this.activeTool === 'square') {
+      this.drawingObject = this.draw.startSquare(
+        this.canvas,
+        this.drawingObject,
+        this.startX,
+        this.startY,
+        this.currentProperties
+      );
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
-    }
-    else if (this.activeTool === 'circle'){
-      this.drawingObject = this.draw.startCircle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
-      this.drawingObject.set('id', uuidv4());
-          this.canvas.add(this.drawingObject);
-    }
-    else if (this.activeTool === 'triangle'){
-      this.drawingObject = this.draw.startTriangle(this.canvas , this.drawingObject ,this.startX , this.startY , this.currentProperties);
+    } else if (this.activeTool === 'circle') {
+      this.drawingObject = this.draw.startCircle(
+        this.canvas,
+        this.drawingObject,
+        this.startX,
+        this.startY,
+        this.currentProperties
+      );
       this.drawingObject.set('id', uuidv4());
       this.canvas.add(this.drawingObject);
-    }
-    else if (this.activeTool === 'select') {
+    } else if (this.activeTool === 'triangle') {
+      this.drawingObject = this.draw.startTriangle(
+        this.canvas,
+        this.drawingObject,
+        this.startX,
+        this.startY,
+        this.currentProperties
+      );
+      this.drawingObject.set('id', uuidv4());
+      this.canvas.add(this.drawingObject);
+    } else if (this.activeTool === 'select') {
       // Ensure we're not in drawing mode for select tool
       this.canvas.isDrawingMode = false;
       this.canvas.selection = true;
@@ -295,30 +315,30 @@ deleteSelected() {
     if (this.drawingObject) {
       this.drawingObject.set({
         selectable: true,
-        evented: true
+        evented: true,
       });
 
-      // Save the shape to backend
+      
       this.update.saveShapeInBackend(this.drawingObject);
     }
     this.drawingObject = null;
     this.isDrawing = false;
   }
-  // Get entire canvas as JSON (for file export)
+  
   getCanvasAsJSON(): string {
     return JSON.stringify(this.canvas.toJSON());
   }
 
-  // Clear canvas and backend
+  
   clearCanvas() {
     this.update.saveStateToBackend(this.isUndoRedoOperation);
     this.canvas.clear();
-    this.http.delete(`${this.baseUrl}/drawing/clear`,{responseType : 'text'}).subscribe({
+    this.http.delete(`${this.baseUrl}/drawing/clear`, { responseType: 'text' }).subscribe({
       next: () => console.log('Canvas cleared'),
-      error: (err) => console.error('Error clearing canvas:', err)
+      error: (err) => console.error('Error clearing canvas:', err),
     });
   }
-  // ================= RECTANGLE ==================
+  
   resizeRectangle(pointer: fabric.Point) {
     const rect = this.drawingObject as fabric.Rect;
 
@@ -326,12 +346,12 @@ deleteSelected() {
       width: Math.abs(pointer.x - this.startX),
       height: Math.abs(pointer.y - this.startY),
       left: Math.min(this.startX, pointer.x),
-      top: Math.min(this.startY, pointer.y)
+      top: Math.min(this.startY, pointer.y),
     });
 
     this.canvas.renderAll();
   }
-  // ================= ELLIPSE ==================
+ 
   resizeEllipse(pointer: fabric.Point) {
     const ellipse = this.drawingObject as fabric.Ellipse;
 
@@ -341,12 +361,12 @@ deleteSelected() {
       left: Math.min(this.startX, pointer.x) + Math.abs(pointer.x - this.startX) / 2,
       top: Math.min(this.startY, pointer.y) + Math.abs(pointer.y - this.startY) / 2,
       originX: 'center',
-      originY: 'center'
+      originY: 'center',
     });
 
     this.canvas.renderAll();
   }
-  // ================= LINE ==================
+  
 
   startLine(pointer: fabric.Point) {
     this.canvas.isDrawingMode = false;
@@ -356,7 +376,7 @@ deleteSelected() {
       this.startX,
       this.startY,
       pointer.x,
-      pointer.y
+      pointer.y,
     ];
 
     this.drawingObject = new fabric.Line(points, {
@@ -364,7 +384,7 @@ deleteSelected() {
       strokeWidth: this.currentProperties.strokeWidth,
       opacity: this.currentProperties.opacity,
       selectable: false,
-      evented: false
+      evented: false,
     });
     this.drawingObject.set('id', uuidv4());
     this.canvas.add(this.drawingObject);
@@ -377,16 +397,16 @@ deleteSelected() {
     this.canvas.renderAll();
   }
 
-  // ================= SQUARE ==================
+ 
   resizeSquare(pointer: fabric.Point) {
     const square = this.drawingObject as fabric.Rect;
 
-    // Calculate size based on the larger dimension to create a square
+    
     const deltaX = Math.abs(pointer.x - this.startX);
     const deltaY = Math.abs(pointer.y - this.startY);
     const size = Math.max(deltaX, deltaY);
 
-    // Determine direction for positioning
+    
     const dirX = pointer.x >= this.startX ? 1 : -1;
     const dirY = pointer.y >= this.startY ? 1 : -1;
 
@@ -394,34 +414,34 @@ deleteSelected() {
       width: size,
       height: size,
       left: dirX === 1 ? this.startX : this.startX - size,
-      top: dirY === 1 ? this.startY : this.startY - size
+      top: dirY === 1 ? this.startY : this.startY - size,
     });
 
     this.canvas.renderAll();
   }
 
-  // ================= CIRCLE ==================
+  
   resizeCircle(pointer: fabric.Point) {
     const circle = this.drawingObject as fabric.Circle;
 
-    // Calculate radius based on the distance from start point
+    
     const deltaX = Math.abs(pointer.x - this.startX);
     const deltaY = Math.abs(pointer.y - this.startY);
     const radius = Math.max(deltaX, deltaY) / 2;
 
-    // Center the circle between start and current pointer
+    
     const centerX = (this.startX + pointer.x) / 2;
     const centerY = (this.startY + pointer.y) / 2;
 
     circle.set({
       radius: radius,
       left: centerX,
-      top: centerY
+      top: centerY,
     });
 
     this.canvas.renderAll();
   }
-  // ================= TRIANGLE ==================
+ 
   resizeTriangle(pointer: fabric.Point) {
     const triangle = this.drawingObject as fabric.Triangle;
 
@@ -432,12 +452,12 @@ deleteSelected() {
       width: width,
       height: height,
       left: Math.min(this.startX, pointer.x),
-      top: Math.min(this.startY, pointer.y)
+      top: Math.min(this.startY, pointer.y),
     });
 
     this.canvas.renderAll();
   }
-  // ================= PROPERTIES ==================
+  
 
   applyPropertiesToSelectedObject() {
     const activeObject = this.canvas.getActiveObject();
@@ -448,19 +468,19 @@ deleteSelected() {
     }
 
     const updates: any = {};
-    // Apply stroke width
+    
     if (this.currentProperties.strokeWidth !== undefined) {
       updates.strokeWidth = this.currentProperties.strokeWidth;
     }
-    // Apply stroke color
+   
     if (this.currentProperties.strokeColor !== undefined) {
       updates.stroke = this.currentProperties.strokeColor;
     }
-    // Apply fill color (only if the object supports fill)
+    
     if (this.currentProperties.fillColor !== undefined && activeObject.type !== 'line') {
       updates.fill = this.currentProperties.fillColor;
     }
-    // Apply opacity
+    
     if (this.currentProperties.opacity !== undefined) {
       updates.opacity = this.currentProperties.opacity;
     }
@@ -468,5 +488,4 @@ deleteSelected() {
     this.canvas.renderAll();
     this.update.updateShapeInBackend(activeObject);
   }
-
 }

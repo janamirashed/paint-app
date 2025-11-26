@@ -172,7 +172,7 @@ export class HeaderToolbar {
       next: (message) => {
         console.log('Backend response:', message);
 
-        // Wait a bit for backend to process, then reload
+        // Wait  for backend to process, then reload
         setTimeout(() => {
           if (this.canvasComponent) {
             this.load.loadShapesFromBackend(this.canvasComponent.canvas);

@@ -1,5 +1,4 @@
 package com.example.paintapp.services;
-
 import com.example.paintapp.shapes.base.Shape;
 import org.springframework.stereotype.Service;
 
@@ -8,7 +7,6 @@ import java.util.*;
 @Service
 public class DrawingService {
 
-    // LinkedHashMa to maintain insertion order and allow search by ID
     private Map<String, Shape> shapes = new LinkedHashMap<>();
 
     private final Stack<Map<String, Shape>> undoStack = new Stack<>();
@@ -16,7 +14,7 @@ public class DrawingService {
     private static final int MAX_HISTORY_SIZE = 50;
 
     public void saveState() {
-        // Deep copy current shapes list
+        
         Map<String, Shape> snapshot = new LinkedHashMap<>();
         for (Map.Entry<String, Shape> entry : shapes.entrySet()) {
             snapshot.put(entry.getKey(), cloneShape(entry.getValue()));
@@ -26,7 +24,7 @@ public class DrawingService {
         if (undoStack.size() > MAX_HISTORY_SIZE) {
             undoStack.remove(0);
         }
-        // Clear redo stack when new action is performed
+        
         redoStack.clear();
         System.out.println("State saved. Undo stack size: " + undoStack.size());
     }
@@ -38,7 +36,7 @@ public class DrawingService {
         }
 
         Shape shape = ShapeFactory.createShape(dto);
-        //shape.setId(dto.getId());
+        
         shapes.put(dto.getId(), shape);
 
         System.out.println("Shape added with ID: " + dto.getId());
@@ -92,17 +90,14 @@ public class DrawingService {
         // Prototype design pattern
         Shape clone = original.clone();
         clone.setId(UUID.randomUUID().toString());
-        double offset = 20;
-        clone.setX1(clone.getX1() + offset);
-        clone.setY1(clone.getY1() + offset);
-        clone.setX2(clone.getX2() + offset);
-        clone.setY2(clone.getY2() + offset);
+        /* double offset = 20; */
+        
 
         shapes.put(clone.getId(), clone);
 
         saveState();
         System.out.println("Shape duplicated: original=" + shapeId + ", clone=" + clone.getId());
-        
+
         return shapeToDTO(clone);
     }
 
@@ -112,7 +107,7 @@ public class DrawingService {
         return shapes.values().stream().map(this::shapeToDTO).toList();
     }
 
-    // Undo operation
+    
     public List<ShapeDTO> undo() {
         if (undoStack.isEmpty()) {
             System.out.println("Nothing to undo");
@@ -138,21 +133,20 @@ public class DrawingService {
             System.out.println("Nothing to redo");
             return getAll();
         }
-        // Save current state to undo stack
+       
         Map<String, Shape> currentSnapshot = new LinkedHashMap<>();
         for (Map.Entry<String, Shape> entry : shapes.entrySet()) {
             currentSnapshot.put(entry.getKey(), cloneShape(entry.getValue()));
         }
         undoStack.push(currentSnapshot);
 
-        // Restore next state
         shapes = redoStack.pop();
 
         System.out.println("Redo performed. Shapes count: " + shapes.size());
         return getAll();
     }
 
-    // Check if undo/redo are available
+    
     public boolean canUndo() {
         return !undoStack.isEmpty();
     }
