@@ -1,9 +1,10 @@
 # 🎨 Paint Application
 
 A modern, full-stack vector graphics editor built with Angular and Spring Boot. Create, edit, and manipulate shapes with an intuitive interface supporting real-time drawing, undo/redo functionality, and file import/export capabilities.
-📸 Application Overview
-Full application interface with drawing canvas, toolbars, and properties panel
-./assets/ui/drawing-demo.jpg
+
+## 📸 Application Overview
+
+![Full application interface with drawing canvas, toolbars, and properties panel](./assets/ui/drawing-demo.jpg)
 
 ## ✨ Features
 
@@ -199,7 +200,9 @@ cd Backend/demo
 - `POST /import/json` - Import from JSON
 - `POST /import/xml` - Import from XML
 
-📁 Project Structure
+## 📁 Project Structure
+
+```
 paint-application/
 ├── assets/                           # Project documentation assets
 │   ├── uml/                         # UML diagrams
@@ -225,6 +228,7 @@ paint-application/
 │   ├── package.json
 │   └── angular.json
 └── README.md
+```
 
 ## 🤝 Contributing
 
@@ -234,7 +238,7 @@ paint-application/
 - **[Mohamed Radwan]** 
 
 ### Development Workflow
-1. Create a feature in seperate branch
+1. Create a feature in separate branch
 2. Implement changes with tests
 3. Submit pull request for review
 4. Merge after approval
@@ -261,7 +265,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ ] Export to PNG/SVG
 - [ ] Collaborative editing
 
-
 ## 🙏 Acknowledgments
 
 - Fabric.js team for the excellent canvas library
@@ -270,4 +273,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Made with ❤️ by [Your Team Name]**
+**Made with ❤️**
